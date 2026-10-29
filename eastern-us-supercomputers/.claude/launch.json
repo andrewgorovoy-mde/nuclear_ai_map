@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "nuke-map", "runtimeExecutable": "python3", "runtimeArgs": ["-m", "http.server", "8766", "--directory", "/Users/agorovoy/Nuke_map/eastern-us-supercomputers"], "port": 8766 }
+  ]
+}

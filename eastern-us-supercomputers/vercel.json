@@ -1,0 +1,3 @@
+{
+  "redirects": [{ "source": "/story.html", "destination": "/", "permanent": false }]
+}

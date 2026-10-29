@@ -1,0 +1,1715 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Counter Map — Explorer</title>
+<meta name="description" content="Interactive map of the eastern U.S. with the Oak Ridge (ORNL) and Colossus (xAI) supercomputers, the TVA power service area, and its transmission lines.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%231d4ed8' fill-opacity='.2'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%231d4ed8'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script>
+  try { document.documentElement.dataset.theme = localStorage.getItem("theme") || "light"; }
+  catch (e) { document.documentElement.dataset.theme = "light"; }
+</script>
+<style>
+  :root {
+    --bg: #060708;
+    --surface: rgba(9, 10, 11, 0.84);
+    --surface-solid: #0c0d0f;
+    --surface-hover: #15171a;
+    --text: #d8d3c4;
+    --muted: #7a766c;
+    --border: rgba(216, 211, 196, 0.12);
+    --shadow: 0 18px 50px rgba(0, 0, 0, 0.7);
+    --tva: #8d877a;
+    --tn: #d8d3c4;
+    --frontier: #c9f24a;
+    --colossus: #c4532b;
+    --line: #8d877a;
+    --focus: #d8d3c4;
+    --v500: #f1ecdc;
+    --v230: #d6cfbb;
+    --v161: #b3ab95;
+    --vlow: #857e6b;
+    --vna: #5c574c;
+    --g-nuclear: #c9f24a;
+    --g-coal: #6a625a;
+    --g-gas: #b4653c;
+    --g-hydro: #6c8a91;
+    --g-solar: #b9a65c;
+    --g-other: #56534c;
+    --seq1: #17171a;
+    --seq2: #2f2e2a;
+    --seq3: #4f4c43;
+    --seq4: #807a68;
+    --seq5: #c2b99f;
+    --warn: #d9a02b;
+    --crit: #c4532b;
+    --font: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  #map { position: fixed; inset: 0; background: var(--bg); }
+
+  /* ---------- Panel ---------- */
+  .panel {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 1000;
+    width: 340px;
+    max-height: calc(100% - 32px);
+    overflow-y: auto;
+    padding: 18px 18px 14px;
+    background: var(--surface);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+  }
+  .eyebrow {
+    margin: 0 0 4px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  h1 { margin: 0 0 6px; font-size: 20px; line-height: 1.2; font-weight: 600; letter-spacing: -0.01em; }
+  .lede { margin: 0 0 14px; color: var(--muted); font-size: 13.5px; }
+
+  .sites { display: grid; gap: 8px; }
+  .site {
+    display: grid;
+    grid-template-columns: 12px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 12px;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    background: var(--surface-solid);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .site:hover { background: var(--surface-hover); }
+  .site:focus-visible, .btn:focus-visible, summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .site[aria-pressed="true"] { border-color: var(--c); box-shadow: inset 3px 0 0 var(--c); }
+  .site[data-site="frontier"] { --c: var(--frontier); }
+  .site[data-site="colossus"] { --c: var(--colossus); }
+  .swatch { width: 12px; height: 12px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 25%, transparent); }
+  .site-name { display: block; font-weight: 600; }
+  .site-meta { display: block; font-size: 12.5px; color: var(--muted); }
+  .chev { color: var(--muted); font-size: 14px; }
+
+  .actions { display: flex; gap: 8px; margin-top: 10px; }
+  .btn {
+    flex: 1;
+    padding: 7px 10px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: inherit;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .btn:hover { background: var(--surface-hover); }
+
+  .more { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
+  .more summary { cursor: pointer; font-size: 13px; font-weight: 500; color: var(--muted); list-style: none; }
+  .more summary::-webkit-details-marker { display: none; }
+  .more summary::after { content: " +"; }
+  .more[open] summary::after { content: " −"; }
+  .legend { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 7px; font-size: 13px; }
+  .legend li { display: flex; align-items: center; gap: 10px; }
+  .key { flex: none; width: 18px; height: 12px; border-radius: 3px; }
+  .key-tva { height: 0; border-radius: 0; border-top: 3px solid var(--tva); }
+  .key-tn { background: color-mix(in srgb, var(--tn) 28%, transparent); border: 1px solid var(--tn); }
+  .key-line { height: 0; border-radius: 0; border-top: 2px dashed var(--line); }
+  .key-v { height: 0; border-radius: 0; border-top: var(--w) solid var(--c); }
+  .key-v500 { --c: var(--v500); --w: 3px; }
+  .key-v230 { --c: var(--v230); --w: 2.5px; }
+  .key-v161 { --c: var(--v161); --w: 2px; }
+  .key-vlow { --c: var(--vlow); --w: 1.5px; }
+  .key-vna { --c: var(--vna); --w: 1px; }
+  .layer-group { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 13px; }
+  .layer-toggle { display: flex; align-items: center; gap: 10px; font-weight: 500; cursor: pointer; }
+  .layer-toggle .hint { font-weight: 400; font-size: 12px; color: var(--muted); }
+  .layer-group input { flex: none; width: 14px; height: 14px; margin: 0; accent-color: var(--focus); cursor: pointer; }
+  .subgrid { list-style: none; margin: 8px 0 0; padding: 0 0 0 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; color: var(--muted); }
+  .subgrid li { display: flex; align-items: center; gap: 8px; }
+  .subgrid.types { grid-template-columns: 1fr; gap: 5px; }
+  .subgrid.types label { display: flex; align-items: center; gap: 8px; width: 100%; color: var(--text); cursor: pointer; }
+  .subgrid.types .num { margin-left: auto; color: var(--muted); font-size: 12px; }
+  .layer-group.off .subgrid { opacity: 0.45; }
+  .subgrid .wide { grid-column: 1 / -1; }
+  .key-est { --c: var(--v161); --w: 2px; opacity: 0.5; }
+  .shape { flex: none; width: 14px; height: 14px; overflow: visible; }
+  .shape path, .plant-icon path { fill: var(--c); stroke: var(--surface-solid); stroke-width: 1.5px; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+  .t-nuclear { --c: var(--g-nuclear); }
+  .t-coal { --c: var(--g-coal); }
+  .t-gas { --c: var(--g-gas); }
+  .t-hydro { --c: var(--g-hydro); }
+  .t-solar { --c: var(--g-solar); }
+  .t-other { --c: var(--g-other); }
+  .plant-icon { background: none; border: 0; }
+  .plant-icon svg { display: block; overflow: visible; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.35)); }
+  .plant-icon:hover path { stroke: var(--text); }
+  .pop-title { display: flex; align-items: center; gap: 7px; }
+  .layer-head { margin: 0 0 8px; font-weight: 500; }
+  .field { display: grid; gap: 4px; margin: 0 0 8px; font-size: 12.5px; color: var(--muted); }
+  .field select, .sub-select {
+    width: 100%; padding: 5px 8px; font: inherit; font-size: 13px; color: var(--text);
+    background: var(--surface-solid); border: 1px solid var(--border); border-radius: 7px;
+  }
+  .sub-select { margin: 6px 0 0 24px; width: calc(100% - 24px); }
+  .seq-legend { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; margin: 0 0 10px; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+  .seq-legend span { display: block; height: 10px; border-radius: 2px; }
+  .seq-legend em { font-style: normal; text-align: center; }
+  .sub-legend { margin: 6px 0 10px 24px; display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 12px; color: var(--muted); }
+  .sub-legend i { display: inline-block; width: 12px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  .layer-group .layer-toggle + .layer-toggle { margin-top: 8px; }
+  .sub-toggle { margin: 8px 0 0 24px; font-weight: 400; }
+  .aq-icon { width: auto !important; height: auto !important; background: none; border: 0; }
+  .aq {
+    display: inline-block; transform: translate(-50%, -50%); padding: 1px 5px; white-space: nowrap;
+    font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text);
+    background: var(--surface-solid); border: 1.5px solid var(--muted); border-radius: 5px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  }
+  .aq--near { border-color: var(--warn); }
+  .aq--over { color: #fff; background: var(--crit); border-color: var(--crit); }
+  .key-aq { width: 18px; height: 12px; border-radius: 3px; border: 1.5px solid var(--muted); background: var(--surface-solid); }
+  .key-aq.near { border-color: var(--warn); }
+  .key-aq.over { background: var(--crit); border-color: var(--crit); }
+  .xai-icon { background: none; border: 0; }
+  .xai-icon svg { display: block; overflow: visible; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4)); }
+  .xai-icon path { fill: var(--g-gas); stroke: var(--colossus); stroke-width: 3px; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+  .xai-link { stroke: var(--colossus); stroke-width: 2; stroke-dasharray: 2 5; stroke-linecap: round; fill: none; }
+  .num { font-family: var(--mono); font-size: 12.5px; }
+  .note { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+
+  /* ---------- Map overlays ---------- */
+  .tva-line { stroke: var(--tva); stroke-width: 2.5; stroke-opacity: 0.9; stroke-linejoin: round; fill: none; transition: stroke-width 0.15s; }
+  .tva-line.is-hover { stroke-width: 4.5; }
+  .tva-hit { stroke: transparent; stroke-width: 14; fill: none; cursor: pointer; }
+  .link-line { stroke: var(--line); stroke-width: 2; stroke-dasharray: 6 6; stroke-opacity: 0.8; fill: none; }
+
+  .site-icon { background: none; border: 0; }
+  .pin { position: relative; display: block; width: 24px; height: 24px; }
+  .pin .dot, .pin .ring { position: absolute; inset: 0; margin: auto; border-radius: 50%; background: var(--c); }
+  .pin .dot { width: 14px; height: 14px; border: 2.5px solid var(--surface-solid); box-shadow: 0 1px 4px rgba(0,0,0,.35); }
+  .pin .ring { width: 24px; height: 24px; opacity: 0.35; animation: pulse 2.2s ease-out infinite; }
+  .pin--frontier { --c: var(--frontier); }
+  .pin--colossus { --c: var(--colossus); }
+  @keyframes pulse { 0% { transform: scale(0.6); opacity: 0.5; } 100% { transform: scale(1.9); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .pin .ring { animation: none; } }
+
+  .leaflet-container { font-family: var(--font); background: var(--bg); }
+  .leaflet-tooltip.site-label, .leaflet-tooltip.plant-tip, .leaflet-tooltip.xai-label {
+    padding: 3px 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.15);
+  }
+  .leaflet-tooltip.link-label {
+    padding: 2px 7px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    box-shadow: none;
+  }
+  .leaflet-tooltip.site-label::before, .leaflet-tooltip.link-label::before, .leaflet-tooltip.plant-tip::before, .leaflet-tooltip.xai-label::before { display: none; }
+
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+    background: var(--surface-solid);
+    color: var(--text);
+    box-shadow: var(--shadow);
+  }
+  .leaflet-popup-content-wrapper { border-radius: 12px; border: 1px solid var(--border); }
+  .leaflet-popup-content { margin: 14px 16px; font-size: 13.5px; line-height: 1.45; }
+  .leaflet-container a.leaflet-popup-close-button { color: var(--muted); }
+  .pop h2 { margin: 0; font-size: 17px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .pop h2::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+  .pop--frontier { --c: var(--frontier); }
+  .pop--colossus { --c: var(--colossus); }
+  .pop .sub { margin: 2px 0 10px; color: var(--muted); font-size: 12.5px; }
+  .pop dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 10px; }
+  .pop dt { color: var(--muted); font-size: 12px; padding-top: 1px; }
+  .pop dd { margin: 0; }
+  .pop .coords { font-family: var(--mono); font-size: 11.5px; color: var(--muted); margin: 0 0 8px; }
+  .pop a, .leaflet-container .pop a { color: var(--focus); font-weight: 500; text-decoration: none; }
+  .pop a:hover { text-decoration: underline; }
+  .state-pop strong { font-size: 14px; }
+  .state-pop span { display: block; color: var(--muted); font-size: 12.5px; }
+
+  .leaflet-bar a, .leaflet-bar a:hover { background: var(--surface-solid); color: var(--text); border-color: var(--border); }
+  .leaflet-control-attribution { background: var(--surface) !important; color: var(--muted); }
+  .leaflet-control-attribution a { color: var(--muted); }
+
+  /* ---------- Timeline ---------- */
+  .timeline {
+    position: fixed;
+    left: 372px;
+    right: 16px;
+    bottom: 16px;
+    z-index: 1000;
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 10px 14px;
+    background: var(--surface);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    font-size: 13px;
+  }
+  .tl-head { display: flex; align-items: center; gap: 10px; }
+  .tl-play {
+    flex: none; display: grid; place-items: center; width: 32px; height: 32px; padding: 0;
+    color: var(--text); background: var(--surface-solid); border: 1px solid var(--border); border-radius: 50%; cursor: pointer;
+  }
+  .tl-play:hover { background: var(--surface-hover); }
+  .tl-play svg { width: 12px; height: 12px; fill: currentColor; }
+  .tl-play:focus-visible, #tl-range:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .tl-year { flex: none; min-width: 4ch; font-family: var(--mono); font-size: 22px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .tl-stats { flex: 1; min-width: 0; color: var(--muted); }
+  .tl-stats b { color: var(--text); font-weight: 600; }
+  .timeline .tl-exit { flex: none; }
+  .tl-track { position: relative; margin-top: 6px; touch-action: none; }
+  .tl-chart { display: block; width: calc(100% - 16px); height: 48px; margin: 0 8px; cursor: pointer; }
+  .tl-chart path { stroke: none; fill: var(--c); opacity: 0.85; }
+  .tl-cursor { stroke: var(--text); stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
+  .tl-max { position: absolute; top: 0; left: 12px; font-family: var(--mono); font-size: 10.5px; color: var(--muted); pointer-events: none; }
+  #tl-range { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 18px; margin: 2px 0 0; background: transparent; cursor: pointer; }
+  #tl-range::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: var(--border); }
+  #tl-range::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px; border-radius: 50%; background: var(--focus); border: 2px solid var(--surface-solid); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); }
+  #tl-range::-moz-range-track { height: 4px; border-radius: 2px; background: var(--border); }
+  #tl-range::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--focus); border: 2px solid var(--surface-solid); }
+  .tl-axis { position: relative; height: 14px; margin: 0 8px; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+  .tl-axis span { position: absolute; transform: translateX(-50%); }
+  .tl-axis span:first-child { transform: none; }
+  .tl-axis span:last-child { transform: translateX(-100%); }
+  .tl-note { margin: 6px 0 0; font-size: 11.5px; line-height: 1.35; color: var(--muted); }
+  .tl-about summary { margin-top: 4px; font-size: 12px; color: var(--muted); cursor: pointer; }
+  @media (min-width: 641px) { .tl-about summary { display: none; } }
+  .leaflet-bottom.leaflet-right { bottom: var(--tl-h, 0px); }
+  @media (max-width: 900px) {
+    .timeline { left: 16px; }
+    .panel { max-height: calc(100% - 48px - var(--tl-h, 0px)); }
+  }
+
+  /* ---------- Phone ---------- */
+  @media (max-width: 640px) {
+    .panel {
+      top: 12px;
+      left: 16px;
+      right: 16px;
+      width: auto;
+      max-height: 55%;
+      padding: 14px 14px 10px;
+    }
+    h1 { font-size: 17px; }
+    .lede { display: none; }
+    .sites { grid-template-columns: 1fr 1fr; }
+    .site { grid-template-columns: 10px 1fr; gap: 8px; padding: 8px 10px; }
+    .chev { display: none; }
+    .swatch { width: 10px; height: 10px; }
+    .site-meta { font-size: 11.5px; }
+    .panel { max-height: calc(100% - 36px - var(--tl-h, 0px)); }
+    .timeline { left: 12px; right: 12px; bottom: 12px; padding: 8px 10px; }
+    .tl-year { font-size: 18px; }
+    .tl-stats { font-size: 12px; }
+    .tl-chart { height: 34px; }
+    .tl-note { font-size: 10.5px; }
+    .leaflet-control-attribution { font-size: 10px; }
+  }
+
+  /* ---------- Dystopian minimal skin ---------- */
+  .panel, .timeline { border-radius: 3px; backdrop-filter: blur(10px) saturate(0.4); -webkit-backdrop-filter: blur(10px) saturate(0.4); }
+  .site, .btn, .field select, .sub-select, .tl-play, .leaflet-popup-content-wrapper { border-radius: 2px; }
+  .tl-play { border-radius: 50%; }
+  h1 { font-family: var(--mono); font-weight: 500; font-size: 17px; letter-spacing: 0.02em; text-transform: uppercase; }
+  .eyebrow, .layer-head, .tl-max, .layer-toggle { letter-spacing: 0.04em; }
+  .layer-head { font-family: var(--mono); font-size: 11px; text-transform: uppercase; color: var(--muted); }
+  .tl-year { color: var(--g-nuclear); }
+  #tl-range::-webkit-slider-thumb { background: var(--text); }
+  #tl-range::-moz-range-thumb { background: var(--text); }
+  .signals { list-style: none; margin: 0 0 14px; padding: 10px 0 0; border-top: 1px solid var(--border); display: grid; gap: 8px; }
+  .signals li { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 12.5px; color: var(--muted); }
+  .signals b { grid-row: span 2; align-self: center; min-width: 4.5ch; font-family: var(--mono); font-size: 18px; font-weight: 500; color: var(--text); }
+  .signals .up { color: var(--g-nuclear); }
+  .signals .down { color: var(--colossus); }
+  /* Basemap fades to ash so the network reads as the only living thing on it. */
+  .leaflet-tile-pane { filter: grayscale(1) brightness(0.62) contrast(1.15); }
+  .leaflet-labels-pane, .leaflet-pane[style*="450"] { opacity: 0.55; }
+  /* Soft bioluminescent bloom on the canvas (states, counties, lines). */
+  .leaflet-overlay-pane canvas { filter: drop-shadow(0 0 1.2px rgba(241, 236, 220, 0.45)) drop-shadow(0 0 5px rgba(241, 236, 220, 0.12)); }
+  .plant-icon path { stroke: #000; stroke-width: 1px; }
+  .plant-icon svg { filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.9)); }
+  .plant-icon .t-nuclear { filter: drop-shadow(0 0 6px rgba(201, 242, 74, 0.55)); }
+  body::after { content: ""; position: fixed; inset: 0; z-index: 500; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.55) 100%); }
+  .leaflet-control-attribution { opacity: 0.7; }
+  .sat-card { position: fixed; z-index: 1200; width: 300px; pointer-events: none; background: var(--surface-solid); border: 1px solid var(--border);
+    border-radius: 2px; box-shadow: var(--shadow); opacity: 0; transform: translateY(4px); transition: opacity 0.15s, transform 0.15s; }
+  .sat-card.show { opacity: 1; transform: none; }
+  .sat-card img, .pop .sat { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; background: #111; filter: grayscale(0.35) contrast(1.05); }
+  .sat-card figcaption { padding: 6px 9px; font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+  .sat-card figcaption b { color: var(--text); font-weight: 500; }
+  .pop .sat { margin: -2px 0 10px; }
+  .leaflet-satpatch-pane { filter: grayscale(0.45) contrast(1.08) brightness(0.9); }
+  .outside-fade { filter: blur(10px); }
+
+  /* ---------- Light mode: ink on bone paper ---------- */
+  :root[data-theme="light"] {
+    --bg: #f4f4f4; --surface: rgba(241, 238, 229, 0.9); --surface-solid: #f3f0e8; --surface-hover: #e3ded1;
+    --text: #1b1a17; --muted: #6a6559; --border: rgba(27, 26, 23, 0.15); --shadow: 0 18px 50px rgba(50, 42, 25, 0.18);
+    --tva: #6a6559; --tn: #1b1a17; --frontier: #4a7a00; --colossus: #b23f17; --line: #6a6559; --focus: #1b1a17;
+    --v500: #141310; --v230: #2d2b25; --v161: #4a4a4a; --vlow: #7a7567; --vna: #9a9586;
+    --g-nuclear: #4a7a00; --g-coal: #3d3934; --g-gas: #a4542b; --g-hydro: #4b6c74; --g-solar: #977f2f; --g-other: #7a766c;
+    --seq1: #ebe7dc; --seq2: #c9c2b0; --seq3: #9c9480; --seq4: #6b6556; --seq5: #3a362e;
+    --warn: #a06a00; --crit: #b23f17;
+    color-scheme: light;
+  }
+  :root[data-theme="light"] .leaflet-tile-pane { filter: grayscale(1) brightness(1.04) contrast(0.92); }
+  :root[data-theme="light"] .leaflet-labels-pane { opacity: 0.7; }
+  :root[data-theme="light"] .leaflet-overlay-pane canvas { filter: drop-shadow(0 0 0.8px rgba(20, 19, 16, 0.3)); }
+  :root[data-theme="light"] .plant-icon path { stroke: #f3f0e8; }
+  :root[data-theme="light"] .plant-icon svg { filter: drop-shadow(0 1px 2px rgba(40, 32, 15, 0.35)); }
+  :root[data-theme="light"] .plant-icon .t-nuclear { filter: drop-shadow(0 0 4px rgba(74, 122, 0, 0.45)); }
+  :root[data-theme="light"] .leaflet-satpatch-pane { filter: grayscale(0.55) contrast(0.98) brightness(1.03); }
+  :root[data-theme="light"] body::after { background: radial-gradient(ellipse at 50% 45%, transparent 60%, rgba(70, 58, 35, 0.2) 100%); }
+  .theme-btn { position: absolute; top: 14px; right: 14px; width: 28px; height: 28px; display: grid; place-items: center; padding: 0;
+    color: var(--muted); background: transparent; border: 1px solid var(--border); border-radius: 2px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text); background: var(--surface-hover); }
+  .theme-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+  .panel { position: fixed; }
+  .panel h1, .panel .eyebrow { padding-right: 34px; }
+
+  /* =====================================================================
+     PAPER SKIN — the explorer in the story's language (default theme).
+     Ink hairlines and mono labels; soft color only where data lives.
+     ===================================================================== */
+  :root[data-theme="light"] {
+    --bg: #ffffff; --surface: rgba(255, 255, 255, 0.94); --surface-solid: #ffffff; --surface-hover: #f0f0f0;
+    --text: #141414; --muted: #8c8c8c; --ink-2: #4a4a4a; --border: rgba(20, 20, 20, 0.14); --shadow: 0 10px 34px rgba(20, 20, 20, 0.12);
+    --tva: #141414; --tn: #8c8c8c; --frontier: #3d8be0; --colossus: #f08458; --line: #4a4a4a; --focus: #141414;
+    --v500: #141414; --v230: #333333; --v161: #555555; --vlow: #8c8c8c; --vna: #adadad;
+    --g-nuclear: #3d8be0; --g-coal: #4a4a4a; --g-gas: #e07a4e; --g-hydro: #7aa6c9; --g-solar: #c9a94a; --g-other: #adadad;
+    --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  :root[data-theme="light"] body { font-family: var(--font); }
+  :root[data-theme="light"] .leaflet-container { font-family: var(--mono); }
+
+  /* map: ash-paper basemap, faint survey grid, no bloom */
+  :root[data-theme="light"] .leaflet-tile-pane { filter: grayscale(1) contrast(0.88) brightness(1.03); opacity: 0.85; }
+  :root[data-theme="light"] .leaflet-labels-pane { opacity: 0.45; }
+  :root[data-theme="light"] .leaflet-overlay-pane canvas { filter: none; }
+  :root[data-theme="light"] .leaflet-satpatch-pane { filter: grayscale(0.4) contrast(0.95); }
+  :root[data-theme="light"] #map::after { content: ""; position: absolute; inset: 0; z-index: 450; pointer-events: none;
+    background-image: linear-gradient(rgba(20, 20, 20,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(20, 20, 20,0.045) 1px, transparent 1px);
+    background-size: 28px 28px; }
+  :root[data-theme="light"] body::after { background: none; }
+
+  /* sidebar: full height, hairline edge, editorial rhythm */
+  :root[data-theme="light"] .panel {
+    top: 0; left: 0; bottom: 0; width: 360px; max-height: none; padding: 30px 28px 140px;
+    background: var(--bg); border: 0; border-right: 1px solid var(--border); border-radius: 0; box-shadow: none;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+  }
+  :root[data-theme="light"] .eyebrow { font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 22px; }
+  :root[data-theme="light"] .eyebrow a { color: var(--text); text-decoration: none; border-bottom: 1px solid var(--text); }
+  :root[data-theme="light"] h1 { font-family: var(--font); text-transform: none; font-size: 40px; line-height: 0.95; font-weight: 500; letter-spacing: -0.035em; margin: 0 0 14px; }
+  :root[data-theme="light"] .lede { font-size: 14.5px; line-height: 1.55; color: var(--ink-2); margin-bottom: 22px; }
+  :root[data-theme="light"] .theme-btn { top: 26px; right: 24px; border-radius: 0; }
+
+  :root[data-theme="light"] .sites { gap: 0; border-top: 1px solid var(--border); }
+  :root[data-theme="light"] .site { grid-template-columns: 10px 1fr auto; padding: 13px 0; background: transparent; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; }
+  :root[data-theme="light"] .site:hover { background: transparent; }
+  :root[data-theme="light"] .site:hover .site-name { text-decoration: underline; text-underline-offset: 3px; }
+  :root[data-theme="light"] .site[aria-pressed="true"] { box-shadow: none; background: linear-gradient(90deg, rgba(86, 168, 255, 0.10), transparent); }
+  :root[data-theme="light"] .swatch { width: 10px; height: 10px; border-radius: 0; box-shadow: none; border: 1px solid var(--text); }
+  :root[data-theme="light"] .site-name { font-weight: 500; letter-spacing: -0.01em; }
+  :root[data-theme="light"] .site-meta { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.03em; }
+
+  :root[data-theme="light"] .signals { border-top: 0; padding-top: 18px; gap: 12px; }
+  :root[data-theme="light"] .signals b { font-size: 17px; }
+  :root[data-theme="light"] .signals .up { color: var(--frontier); }
+  :root[data-theme="light"] .signals .down { color: var(--colossus); }
+
+  :root[data-theme="light"] .actions { gap: 22px; margin-top: 4px; }
+  :root[data-theme="light"] .btn { flex: none; padding: 3px 0; font-family: var(--mono); font-size: 10.5px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase;
+    background: transparent; border: 0; border-bottom: 1px solid var(--text); border-radius: 0; }
+  :root[data-theme="light"] .btn:hover { background: transparent; color: var(--frontier); border-color: var(--frontier); }
+
+  :root[data-theme="light"] .more { margin-top: 26px; border-top: 1px solid var(--text); padding-top: 12px; }
+  :root[data-theme="light"] .more summary { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); }
+  :root[data-theme="light"] .layer-group { border-top: 1px solid var(--border); padding-top: 14px; margin-top: 14px; }
+  :root[data-theme="light"] .layer-toggle { font-weight: 500; letter-spacing: 0; }
+  :root[data-theme="light"] .layer-toggle .hint, :root[data-theme="light"] .layer-head { font-family: var(--mono); font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+  :root[data-theme="light"] .layer-group input { accent-color: var(--text); border-radius: 0; }
+  :root[data-theme="light"] .field select, :root[data-theme="light"] .sub-select { background: transparent; border: 0; border-bottom: 1px solid var(--text); border-radius: 0; padding: 4px 0; font-family: var(--mono); font-size: 11.5px; }
+  :root[data-theme="light"] .key, :root[data-theme="light"] .seq-legend span, :root[data-theme="light"] .sub-legend i { border-radius: 0; }
+
+  /* timeline bar: a ruled strip, not a card */
+  :root[data-theme="light"] .timeline { left: 360px; right: 0; bottom: 0; max-width: none; margin: 0; border: 0; border-top: 1px solid var(--border);
+    border-radius: 0; box-shadow: none; background: rgba(255, 255, 255, 0.94); backdrop-filter: none; padding: 12px 22px 10px; }
+  :root[data-theme="light"] .tl-year { color: var(--text); }
+  :root[data-theme="light"] .tl-play { border-radius: 0; border-color: var(--text); }
+  :root[data-theme="light"] #tl-range::-webkit-slider-thumb { border-radius: 0; background: var(--bg); border: 1.5px solid var(--text); }
+  :root[data-theme="light"] #tl-range::-moz-range-thumb { border-radius: 0; background: var(--bg); border: 1.5px solid var(--text); }
+  :root[data-theme="light"] #tl-range::-webkit-slider-runnable-track { height: 1px; background: var(--text); }
+
+  /* pins, labels, popups: square nodes, mono tags, ruled cards */
+  :root[data-theme="light"] .pin .dot { border-radius: 0; width: 12px; height: 12px; border: 1.5px solid var(--text); box-shadow: none; }
+  :root[data-theme="light"] .pin .ring { border-radius: 50%; filter: blur(6px); opacity: 0.45; }
+  :root[data-theme="light"] .leaflet-tooltip.site-label, :root[data-theme="light"] .leaflet-tooltip.plant-tip, :root[data-theme="light"] .leaflet-tooltip.xai-label {
+    border-radius: 0; box-shadow: none; border: 0; background: rgba(255, 255, 255, 0.86); font-family: var(--mono); font-size: 10.5px; font-weight: 500;
+    letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 5px; }
+  :root[data-theme="light"] .leaflet-popup-content-wrapper { border-radius: 0; box-shadow: var(--shadow); }
+  :root[data-theme="light"] .leaflet-popup-tip { box-shadow: none; }
+  :root[data-theme="light"] .leaflet-popup-content { font-family: var(--font); }
+  :root[data-theme="light"] .pop h2 { font-family: var(--font); font-weight: 500; letter-spacing: -0.02em; }
+  :root[data-theme="light"] .pop h2::before { border-radius: 0; }
+  :root[data-theme="light"] .pop .sub, :root[data-theme="light"] .pop dt { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.03em; }
+  :root[data-theme="light"] .sat-card { border-radius: 0; }
+  :root[data-theme="light"] .leaflet-bar a { border-radius: 0 !important; background: var(--bg); }
+  :root[data-theme="light"] .plant-icon svg { filter: none; }
+  :root[data-theme="light"] .plant-icon path { stroke: var(--bg); stroke-width: 1.2px; }
+
+  @media (max-width: 640px) {
+    :root[data-theme="light"] .panel { bottom: auto; width: auto; right: 0; max-height: 55%; padding: 18px 18px 14px; border-right: 0; border-bottom: 1px solid var(--border); }
+    :root[data-theme="light"] h1 { font-size: 28px; }
+    :root[data-theme="light"] .timeline { left: 0; }
+  }
+  @media (min-width: 641px) and (max-width: 900px) {
+    :root[data-theme="light"] .panel { max-height: none; }
+    :root[data-theme="light"] .timeline { left: 360px; }
+  }
+
+  /* ---------- records: reader-contributed testimony and observations ---------- */
+  :root { --tool: var(--text); }
+  .records { margin-top: 26px; padding-top: 12px; border-top: 4px solid var(--tool); }
+  .rec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .rec-head h2 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .rec-add { font-family: var(--mono); font-size: 12px; padding: 3px 10px; color: var(--tool); background: transparent; border: 1.5px solid var(--tool); border-radius: 0; cursor: pointer; }
+  .rec-add:hover, .rec-add[aria-pressed="true"] { background: var(--tool); color: var(--bg); }
+  .rec-note { margin: 8px 0 10px; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+  .rec-list { list-style: none; margin: 0 0 10px; padding: 0; }
+  .rec-list li { display: grid; grid-template-columns: 14px 1fr; gap: 2px 10px; padding: 8px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .rec-list li:hover b { text-decoration: underline; }
+  .rec-list i { grid-row: span 2; width: 10px; height: 10px; margin-top: 4px; border: 1.5px solid var(--tool); }
+  .rec-list b { font-weight: 500; font-size: 13.5px; }
+  .rec-list span { font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+  .rec-banner { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 1100; padding: 8px 14px; font-family: var(--mono); font-size: 12px;
+    color: var(--bg); background: var(--tool); }
+  body.placing #map, body.placing #map .leaflet-interactive { cursor: crosshair !important; }
+  .rec-icon { background: none; border: 0; }
+  .rec-icon span { display: grid; place-items: center; width: 20px; height: 20px; background: var(--surface-solid); border: 1.5px solid var(--tool); color: var(--tool);
+    font-family: Georgia, serif; font-size: 16px; padding-top: 5px; box-shadow: 0 0 0 4px rgba(20, 20, 20, 0.14); }
+  .rec-form { display: grid; gap: 7px; width: 250px; font-family: var(--font); }
+  .rec-form b.rec-form-title { font-size: 15px; font-weight: 600; }
+  .rec-form label { display: grid; gap: 3px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+  .rec-form input, .rec-form select, .rec-form textarea { font: 13px var(--font); color: var(--text); background: transparent; border: 0; border-bottom: 1px solid var(--text); border-radius: 0; padding: 4px 0; }
+  .rec-form textarea { min-height: 70px; resize: vertical; border: 1px solid var(--border); padding: 6px; }
+  .rec-form .rec-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .rec-form .rec-actions { display: flex; gap: 14px; margin-top: 4px; }
+  .rec-form button { font-family: var(--mono); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; padding: 4px 10px; border-radius: 0; cursor: pointer;
+    border: 1.5px solid var(--tool); background: var(--tool); color: var(--bg); }
+  .rec-form button.ghost { background: transparent; color: var(--text); border-color: var(--border); }
+  .rec-pop .t-kicker { margin: 0 0 6px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--tool); }
+  .rec-pop blockquote { margin: 0 0 8px; font-size: 14.5px; line-height: 1.45; }
+  .rec-pop p { margin: 0; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+  .rec-pop button { margin-top: 8px; font-family: var(--mono); font-size: 10px; text-transform: uppercase; background: none; border: 0; border-bottom: 1px solid var(--muted); color: var(--muted); cursor: pointer; padding: 0; }
+</style>
+</head>
+<body>
+<div id="map" aria-label="Map of the eastern United States"></div>
+
+<aside class="panel" aria-label="Map details">
+  <button class="theme-btn" type="button" id="theme-btn" aria-label="Switch to light mode"></button>
+  <p class="eyebrow"><a href="./">← The story</a> · Explorer · TVA zone, 1910–2025</p>
+  <h1>The Counter Map</h1>
+  <p class="lede">Two machines, one grid. Press play below to watch the network spread like mycelium from the dams; click anything for its story.</p>
+
+  <div class="sites">
+    <button class="site" type="button" data-site="frontier" aria-pressed="false">
+      <span class="swatch"></span>
+      <span><span class="site-name">Oak Ridge</span><span class="site-meta">ORNL · Oak Ridge, TN</span></span>
+      <span class="chev" aria-hidden="true">→</span>
+    </button>
+    <button class="site" type="button" data-site="colossus" aria-pressed="false">
+      <span class="swatch"></span>
+      <span><span class="site-name">Colossus</span><span class="site-meta">xAI · Memphis, TN</span></span>
+      <span class="chev" aria-hidden="true">→</span>
+    </button>
+  </div>
+
+  <ul class="signals" id="signals" aria-label="Key figures"></ul>
+
+  <div class="actions">
+    <button class="btn" type="button" id="show-both">Show both</button>
+    <button class="btn" type="button" id="reset">Seaboard view</button>
+  </div>
+
+  <section class="records" aria-label="Records">
+    <div class="rec-head"><h2>Records</h2><button class="rec-add" type="button" id="rec-add">＋ Add a record</button></div>
+    <p class="rec-note" id="rec-note">Add a testimony, observation or correction to a place on the map. Records are saved in this browser; export them to share.</p>
+    <ol class="rec-list" id="rec-list"></ol>
+    <button class="btn" type="button" id="rec-export" hidden>Export records (JSON)</button>
+  </section>
+
+  <details class="more" open>
+    <summary>Legend</summary>
+    <ul class="legend">
+      <li><span class="key key-tva"></span>TVA power service area</li>
+      <li><span class="key key-tn"></span>Tennessee, home to both sites</li>
+      <li><span class="key key-line"></span><span>Straight-line distance: <span class="num" id="dist"></span></span></li>
+    </ul>
+    <div class="layer-group" id="plants-group">
+      <label class="layer-toggle"><input type="checkbox" id="toggle-plants" checked>Power plants <span class="hint">sized by capacity</span></label>
+      <ul class="subgrid types" id="plant-types"></ul>
+      <label class="layer-toggle sub-toggle"><input type="checkbox" id="toggle-xai" checked><svg class="shape" viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><path d="M10 1.5 L19 18 H1 Z" style="fill:var(--g-gas);stroke:var(--colossus);stroke-width:2.5px"/></svg>xAI off-grid gas turbines</label>
+    </div>
+    <div class="layer-group" id="lines-group">
+      <label class="layer-toggle"><input type="checkbox" id="toggle-lines" checked>Transmission lines</label>
+      <ul class="subgrid">
+        <li><span class="key key-v key-v500"></span>500 kV</li>
+        <li><span class="key key-v key-v230"></span>230 kV</li>
+        <li><span class="key key-v key-v161"></span>100–161 kV</li>
+        <li><span class="key key-v key-vlow"></span>Under 100 kV</li>
+        <li><span class="key key-v key-vna"></span>Not listed</li>
+        <li class="wide"><span class="key key-v key-est"></span>Faded on the timeline: year estimated</li>
+      </ul>
+    </div>
+    <div class="layer-group" id="context-group">
+      <p class="layer-head">Community &amp; environment</p>
+      <label class="field">Counties, ACS 2020–2024
+        <select id="county-var">
+          <option value="">Off</option>
+          <option value="dens">Population density</option>
+          <option value="inc">Median household income</option>
+          <option value="pov">Poverty rate</option>
+        </select>
+      </label>
+      <div class="seq-legend" id="county-legend" hidden></div>
+      <label class="layer-toggle"><input type="checkbox" id="toggle-air">Air-quality monitors, 2025</label>
+      <div id="air-opts" hidden>
+        <select class="sub-select" id="air-var" aria-label="Air pollutant">
+          <option value="pm">PM2.5, annual mean (µg/m³)</option>
+          <option value="o3">Ozone, 4th-highest 8-hour (ppb)</option>
+        </select>
+        <div class="sub-legend">
+          <span><span class="key key-aq" style="display:inline-block;vertical-align:-2px;margin-right:5px"></span>Meets standard</span>
+          <span><span class="key key-aq near" style="display:inline-block;vertical-align:-2px;margin-right:5px"></span>Within 10%</span>
+          <span><span class="key key-aq over" style="display:inline-block;vertical-align:-2px;margin-right:5px"></span>▲ Above standard</span>
+        </div>
+      </div>
+      <label class="layer-toggle"><input type="checkbox" id="toggle-sat">Satellite patches around generation</label>
+      <label class="layer-toggle"><input type="checkbox" id="toggle-noise">Transportation noise, 2022</label>
+      <div class="sub-legend" id="noise-legend" hidden>
+        <span><i style="background:#ffc107"></i>45</span><span><i style="background:#ff8000"></i>50</span><span><i style="background:#ff0000"></i>55</span>
+        <span><i style="background:#ff3399"></i>60</span><span><i style="background:#a300cc"></i>70</span><span><i style="background:#5200cc"></i>80</span>
+        <span><i style="background:#0000ff"></i>90+ dBA, 24-hour average</span>
+      </div>
+    </div>
+  </details>
+</aside>
+
+<figure class="sat-card" id="sat-card" aria-hidden="true"><img alt=""><figcaption></figcaption></figure>
+
+<div class="rec-banner" id="rec-banner" hidden>Click the map to place your record · <b>Esc</b> to cancel</div>
+
+<section class="timeline" id="timeline" aria-label="Timeline">
+  <div class="tl-head">
+    <button class="tl-play" type="button" id="tl-play" aria-label="Play the timeline"></button>
+    <span class="tl-year" id="tl-year">2025</span>
+    <span class="tl-stats" id="tl-stats">Loading…</span>
+    <button class="btn tl-exit" type="button" id="tl-exit" hidden>Back to today</button>
+  </div>
+  <div class="tl-track" id="tl-track">
+    <svg class="tl-chart" id="tl-chart" preserveAspectRatio="none" aria-hidden="true"></svg>
+    <span class="tl-max" id="tl-max"></span>
+    <input type="range" id="tl-range" min="1910" max="2025" step="1" value="2025" aria-label="Year">
+    <div class="tl-axis" id="tl-axis"></div>
+  </div>
+  <details class="tl-about" id="tl-about">
+    <summary>About this data</summary>
+    <p class="tl-note" id="tl-note"></p>
+  </details>
+</section>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+<script>
+  const SITES = [
+    {
+      id: "frontier",
+      name: "Oak Ridge",
+      lat: 35.9301,
+      lng: -84.3119,
+      popup: `
+        <div class="pop pop--frontier">
+          <h2>Oak Ridge</h2>
+          <p class="sub">Oak Ridge National Laboratory · Oak Ridge, TN</p>
+          <dl>
+            <dt>System</dt><dd>Frontier exascale supercomputer</dd>
+            <dt>Operator</dt><dd>U.S. Dept. of Energy, Oak Ridge Leadership Computing Facility</dd>
+            <dt>Built by</dt><dd>HPE Cray, with AMD CPUs and GPUs</dd>
+            <dt>Milestone</dt><dd>First exascale system on the TOP500 (June 2022, 1.1 exaflops)</dd>
+            <dt>Peak</dt><dd>About 2 exaflops theoretical</dd>
+            <dt>Used for</dt><dd>Open scientific research</dd>
+          </dl>
+          <p class="coords">35.9301° N, 84.3119° W</p>
+          <a href="https://www.olcf.ornl.gov/frontier/" target="_blank" rel="noopener">OLCF: Frontier ↗</a>
+        </div>`
+    },
+    {
+      id: "colossus",
+      name: "Colossus",
+      lat: 35.0600,
+      lng: -90.1520,
+      popup: `
+        <div class="pop pop--colossus">
+          <h2>Colossus</h2>
+          <p class="sub">xAI · 3231 Paul R. Lowry Rd, Memphis, TN</p>
+          <dl>
+            <dt>Operator</dt><dd>xAI</dd>
+            <dt>Site</dt><dd>Former Electrolux plant, southwest Memphis</dd>
+            <dt>Hardware</dt><dd>NVIDIA GPU cluster; launched in 2024 with 100,000 H100s and since expanded</dd>
+            <dt>Used for</dt><dd>Training xAI's Grok models</dd>
+            <dt>Turbines</dt><dd>Ran up to 35 gas turbines (about 421 MW) on site in early 2025, most without permits; 15 permitted since July 2025 (247 MW)</dd>
+            <dt>Colossus 2</dt><dd>Separate data center on Tulane Rd, Whitehaven, about 8 mi southeast, powered by xAI's turbines in Southaven, MS</dd>
+          </dl>
+          <p class="coords">35.0600° N, 90.1520° W</p>
+          <a href="https://x.ai/colossus" target="_blank" rel="noopener">xAI: Colossus ↗</a>
+        </div>`
+    }
+  ];
+
+  const SEABOARD_BOUNDS = L.latLngBounds([24.4, -91.6], [47.5, -66.9]);
+
+  const panel = document.querySelector(".panel");
+  const details = document.querySelector(".more");
+  const timelineEl = document.getElementById("timeline");
+  const phone = window.matchMedia("(max-width: 640px)");
+  const dark = window.matchMedia("(prefers-color-scheme: dark)");
+  if (phone.matches) details.open = false;
+
+  // Keep fitted views and popups clear of the floating panel.
+  function panelPadding() {
+    const r = panel.getBoundingClientRect();
+    return phone.matches ? L.point(16, r.bottom + 12) : L.point(r.right + 24, 24);
+  }
+  function fitOpts() {
+    const size = map.getSize(), tl = panelPadding(), br = L.point(40, timelineEl.offsetHeight + 40);
+    // On a tiny viewport the panel would eat the whole map; fit to the full map instead.
+    if (size.x - tl.x - br.x < 160 || size.y - tl.y - br.y < 160) return { padding: L.point(8, 8) };
+    return { paddingTopLeft: tl, paddingBottomRight: br };
+  }
+
+  const map = L.map("map", { zoomControl: false, minZoom: 3, maxZoom: 16, zoomSnap: 0.25 })
+    .setView([36, -79], 5);
+  L.control.zoom({ position: "bottomright" }).addTo(map);
+
+  // Keep the seaboard framed until the visitor moves the map themselves.
+  let autoFit = true;
+  const fitSeaboard = () => { if (map.getSize().x > 0) map.fitBounds(SEABOARD_BOUNDS, fitOpts()); };
+  ["pointerdown", "wheel", "touchstart"].forEach(t =>
+    map.getContainer().addEventListener(t, () => { autoFit = false; }, { passive: true }));
+  map.on("resize", () => { if (autoFit) fitSeaboard(); });
+  new ResizeObserver(() => map.invalidateSize()).observe(map.getContainer());
+  fitSeaboard();
+
+  // Esri gray canvas: base below the state shading, labels above it.
+  map.createPane("labels");
+  map.getPane("labels").style.zIndex = 450;
+  map.getPane("labels").style.pointerEvents = "none";
+  const esri = (layer, isDark) =>
+    `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_${isDark ? "Dark" : "Light"}_Gray_${layer}/MapServer/tile/{z}/{y}/{x}`;
+  const base = L.tileLayer(esri("Base", document.documentElement.dataset.theme !== "light"), {
+    maxZoom: 16,
+    attribution: 'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors'
+  }).addTo(map);
+  const labels = L.tileLayer(esri("Reference", document.documentElement.dataset.theme !== "light"), { maxZoom: 16, pane: "labels" }).addTo(map);
+
+  // States and transmission lines share one canvas so clicks reach whichever is on top.
+  const canvas = L.canvas({ padding: 0.5, tolerance: 5 });
+  const cssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  let palette;
+  const readPalette = () => {
+    palette = Object.fromEntries(["--muted", "--tn", "--v500", "--v230", "--v161", "--vlow", "--vna", "--seq1", "--seq2", "--seq3", "--seq4", "--seq5", "--surface-solid", "--text"].map(k => [k, cssVar(k)]));
+  };
+  readPalette();
+  // Bump when any data file changes, so browsers never pair new code with a cached old file.
+  const DATA_VERSION = "2026-10-19";
+  const dataUrl = name => `${name}?v=${DATA_VERSION}`;
+  const esc = t => String(t).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
+
+  // States: Tennessee shaded; any state is clickable.
+  const stateStyle = (name, hover) => {
+    const c = palette[name === "Tennessee" ? "--tn" : "--muted"];
+    if (countyVar) return { color: c, weight: 1, opacity: 0.6, fillOpacity: 0 };
+    return name === "Tennessee"
+      ? { color: c, weight: 1, opacity: 0.5, fillColor: c, fillOpacity: hover ? 0.1 : 0.04 }
+      : { color: c, weight: 1, opacity: 0.35, fillColor: c, fillOpacity: hover ? 0.16 : 0.04 };
+  };
+  let statesLayer = null;
+  fetch("https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-10m.json")
+    .then(r => r.json())
+    .then(topo => {
+      const states = topojson.feature(topo, topo.objects.states);
+      statesLayer = L.geoJSON(states, {
+        renderer: canvas,
+        style: f => stateStyle(f.properties.name, false),
+        onEachFeature: (f, layer) => {
+          const n = f.properties.name;
+          const tag = n === "Tennessee" ? "<span>Home to both supercomputer sites</span>" : "";
+          layer.on("mouseover", () => layer.setStyle(stateStyle(n, true)));
+          layer.on("mouseout", () => layer.setStyle(stateStyle(n, false)));
+          layer.on("click", e => {
+            L.popup({ className: "state-popup", autoPanPaddingTopLeft: panelPadding() })
+              .setLatLng(e.latlng)
+              .setContent(`<div class="state-pop"><strong>${n}</strong>${tag}</div>`)
+              .openOn(map);
+          });
+        }
+      }).addTo(map);
+      statesLayer.bringToBack();
+    })
+    .catch(err => console.warn("State outlines unavailable:", err));
+
+  // Transmission lines (HIFLD), clipped to the TVA service area; heavier lines for higher voltage.
+  const LINE_CLASSES = {
+    "500": { weight: 2, color: "--v500", opacity: 0.95, label: "500 kV" },
+    "230": { weight: 1.4, color: "--v230", opacity: 0.85, label: "220–287 kV" },
+    "161": { weight: 0.9, color: "--v161", opacity: 0.75, label: "100–161 kV" },
+    "lt100": { weight: 0.6, color: "--vlow", opacity: 0.65, label: "Under 100 kV" },
+    "na": { weight: 0.5, color: "--vna", opacity: 0.6, label: "" }
+  };
+  const lineStyle = (c, hover) => {
+    const k = LINE_CLASSES[c];
+    // Mycelial filaments: thin, round-jointed, brighter and thicker toward the high-voltage trunks.
+    return { color: palette[k.color], weight: k.weight + (hover ? 2 : 0), opacity: hover ? 1 : k.opacity, dashArray: null, lineCap: "round", lineJoin: "round", smoothFactor: 1.5 };
+  };
+  function linePopup(p) {
+    const kv = p.v ? `${p.v} kV` : LINE_CLASSES[p.c].label;
+    const title = kv ? `${kv} transmission line` : "Transmission line";
+    const ends = p.a && p.b ? `${esc(p.a)} → ${esc(p.b)}` : p.a || p.b ? `Connects to ${esc(p.a || p.b)}` : "";
+    const rows = [
+      !kv && "Voltage not listed",
+      p.o && `Owner: ${esc(p.o)}`,
+      ends,
+      p.s && `Status: ${esc(p.s)}`
+    ].filter(Boolean).map(r => `<span>${r}</span>`).join("");
+    return `<div class="state-pop"><strong>${title}</strong>${rows}</div>`;
+  }
+  // Timeline state. Off = today's map; on = the network and fleet as they stood in TL.year.
+  const TL = { start: 1910, end: 2025, year: 2025, on: false, timer: null };
+  const TVA_BOUNDS = L.latLngBounds([32.3, -90.4], [37.6, -81.6]);
+
+  // Today's network (HIFLD), every line with an in-service year: recorded in OpenStreetMap, or estimated from
+  // network dependencies (a line enters service once both of its ends exist; see the note under the timeline).
+  let linesLayer = null, lineShare = null;
+  const lineItems = [];
+  const toggleLines = document.getElementById("toggle-lines");
+  const linesGroup = document.getElementById("lines-group");
+  const lineKm = geom => {
+    const parts = geom.type === "LineString" ? [geom.coordinates] : geom.coordinates;
+    let km = 0;
+    parts.forEach(c => c.slice(1).forEach(([x2, y2], i) => {
+      const [x1, y1] = c[i];
+      km += Math.hypot((x2 - x1) * 111.32 * Math.cos((y1 + y2) * Math.PI / 360), (y2 - y1) * 110.57);
+    }));
+    return km;
+  };
+  const YEAR_SOURCE = [
+    "Year recorded in OpenStreetMap",
+    "Estimated: both ends were in service by then",
+    "Estimated: branches off a substation in service by then, timed to nearby recorded lines",
+    "Estimated: median of nearby recorded lines"
+  ];
+  // Lines built in the last few years of the selected year are drawn heavier, so growth stands out while playing.
+  const isFresh = y => TL.year - y < 3;
+  // Today: voltage colors as before. Timeline: estimated years faded, fresh lines heavier.
+  function netStyle(p, hover) {
+    const base = lineStyle(p.c, hover);
+    if (!TL.on) return base;
+    return { ...base, weight: base.weight + (isFresh(p.y) ? 1.6 : 0), opacity: p.m ? 0.5 : 1 };
+  }
+  function netPopup(p) {
+    const when = p.m ? `In service: about ${p.y}` : `In service: ${p.y}${p.ya ? " (approximate)" : ""}`;
+    return linePopup(p).slice(0, -"</div>".length) + `<span>${when}</span><span>${YEAR_SOURCE[p.m]}</span></div>`;
+  }
+  fetch(dataUrl("tva-lines-timeline.geojson"))
+    .then(r => r.json())
+    .then(data => {
+      lineShare = data.properties.share_by_method;
+      linesLayer = L.geoJSON(data, {
+        renderer: canvas,
+        style: f => netStyle(f.properties, false),
+        attribution: 'Transmission lines: HIFLD; build years &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors (ODbL), others estimated',
+        onEachFeature: (f, layer) => {
+          layer.on("mouseover", () => layer.setStyle(netStyle(f.properties, true)));
+          layer.on("mouseout", () => layer.setStyle(netStyle(f.properties, false)));
+          layer.on("click", e => {
+            L.popup({ autoPanPaddingTopLeft: panelPadding() })
+              .setLatLng(e.latlng)
+              .setContent(netPopup(f.properties))
+              .openOn(map);
+          });
+        }
+      });
+      linesLayer.eachLayer(l => lineItems.push({ layer: l, p: l.feature.properties, km: lineKm(l.feature.geometry), shown: true, fresh: null }));
+      if (toggleLines.checked) linesLayer.addTo(map);
+      syncLines(true);
+      restack();
+      renderNote();
+      renderStats();
+      renderSignals();
+    })
+    .catch(err => console.warn("Transmission lines unavailable:", err));
+
+  // Show the lines in service in TL.year (all of them when the timeline is off).
+  function syncLines(restyle) {
+    if (!linesLayer) return;
+    lineItems.forEach(it => {
+      const want = !TL.on || it.p.y <= TL.year;
+      if (want !== it.shown) {
+        want ? linesLayer.addLayer(it.layer) : linesLayer.removeLayer(it.layer);
+        it.shown = want;
+      }
+      const fresh = TL.on && want && isFresh(it.p.y);
+      if (want && (restyle || fresh !== it.fresh)) {
+        it.layer.setStyle(netStyle(it.p, false));
+        it.fresh = fresh;
+      }
+    });
+  }
+  // One shared canvas: states stay at the back.
+  function restack() {
+    if (countiesLayer && map.hasLayer(countiesLayer)) countiesLayer.bringToBack();
+    statesLayer?.bringToBack();
+  }
+  toggleLines.addEventListener("change", () => {
+    linesGroup.classList.toggle("off", !toggleLines.checked);
+    if (linesLayer) toggleLines.checked ? linesLayer.addTo(map) : map.removeLayer(linesLayer);
+    restack();
+  });
+
+  // Power plants (EIA-860 generators): shape and color both encode fuel type, so type never rests on color alone.
+  const STAR = Array.from({ length: 10 }, (_, i) => {
+    const r = i % 2 ? 4.2 : 9.5, a = Math.PI / 5 * i - Math.PI / 2;
+    return `${(10 + r * Math.cos(a)).toFixed(2)} ${(10.8 + r * Math.sin(a)).toFixed(2)}`;
+  }).join(" L");
+  // Radiation trefoil: three 60° blades around a hub, one pointing down.
+  const TREFOIL = [-150, -30, 90].map(deg => {
+    const pt = (r, a) => `${(10 + r * Math.cos(a * Math.PI / 180)).toFixed(2)} ${(10 + r * Math.sin(a * Math.PI / 180)).toFixed(2)}`;
+    return `M${pt(3.1, deg - 30)} L${pt(9.6, deg - 30)} A9.6 9.6 0 0 1 ${pt(9.6, deg + 30)} L${pt(3.1, deg + 30)} A3.1 3.1 0 0 0 ${pt(3.1, deg - 30)} Z`;
+  }).join(" ") + " M8.1 10 a1.9 1.9 0 1 0 3.8 0 a1.9 1.9 0 1 0 -3.8 0 Z";
+  const PLANT_TYPES = {
+    nuclear: { label: "Nuclear", d: TREFOIL },
+    coal: { label: "Coal", d: "M2.5 2.5 H17.5 V17.5 H2.5 Z" },
+    gas: { label: "Natural gas", d: "M10 1.5 L19 18 H1 Z" },
+    hydro: { label: "Hydro & pumped storage", d: "M1.5 10 a8.5 8.5 0 1 0 17 0 a8.5 8.5 0 1 0 -17 0 Z" },
+    solar: { label: "Solar", d: `M${STAR} Z` },
+    other: { label: "Biomass, oil & other", d: "M7 1.5 H13 V7 H18.5 V13 H13 V18.5 H7 V13 H1.5 V7 H7 Z" }
+  };
+  const TYPE_KEYS = Object.keys(PLANT_TYPES);
+  const shapeSvg = (t, size, cls = "shape") =>
+    `<svg class="${cls} t-${t}" viewBox="0 0 20 20" width="${size}" height="${size}" aria-hidden="true"><path d="${PLANT_TYPES[t].d}"/></svg>`;
+  const fmtMW = mw => mw >= 1000 ? `${(mw / 1000).toFixed(1)} GW` : `${mw.toLocaleString("en-US", { maximumFractionDigits: mw < 10 ? 1 : 0 })} MW`;
+  const plantSize = mw => Math.round(Math.min(34, 10 + Math.sqrt(mw) * 0.4));
+  // Capacity online in a year, by fuel index: a generator counts from its operating year until its retirement year.
+  const plantMix = (g, year) => {
+    const mix = [0, 0, 0, 0, 0, 0];
+    for (const [y0, y1, mw, t] of g) if (y0 <= year && (!y1 || year < y1)) mix[t] += mw;
+    return mix;
+  };
+
+  function plantPopup(pl) {
+    const p = pl.p, mix = plantMix(p.g, TL.year);
+    const now = mix.map((mw, i) => mw && `${PLANT_TYPES[TYPE_KEYS[i]].label} ${fmtMW(mw)}`).filter(Boolean).join(", ");
+    const firstYear = Math.min(...p.g.map(g => g[0]));
+    const retired = p.g.filter(g => g[1] && g[1] <= TL.year);
+    const rows = [
+      `In ${TL.year}: ${now || "not yet online"}`,
+      `First unit online: ${firstYear}`,
+      retired.length && `Units retired by ${TL.year}: ${retired.length} (last in ${Math.max(...retired.map(g => g[1]))})`,
+      `Operator: ${esc(p.u)}`,
+      esc(p.loc),
+      p.out && "TVA-owned, just outside the service area",
+      p.em && `2025 emissions (EPA): SO₂ ${p.em[0].toLocaleString("en-US")} t · NOx ${p.em[1].toLocaleString("en-US")} t · CO₂ ${(p.em[2] / 1e6).toFixed(2)} Mt`
+    ].filter(Boolean).map(r => `<span>${r}</span>`).join("");
+    return `<div class="state-pop"><strong class="pop-title">${shapeSvg(pl.t || "other", 13)}${esc(p.n)}</strong>${rows}</div>`;
+  }
+
+  const plantGroups = Object.fromEntries(TYPE_KEYS.map(t => [t, L.layerGroup()]));
+  const plantsLayer = L.layerGroup(Object.values(plantGroups), { attribution: "Power plants: EIA-860" });
+  const togglePlants = document.getElementById("toggle-plants");
+  const plantsGroup = document.getElementById("plants-group");
+  const plants = [];
+  let capacitySeries = null;
+  fetch(dataUrl("tva-plants-timeline.geojson"))
+    .then(r => r.json())
+    .then(data => {
+      TL.end = data.properties.latest;
+      data.features.forEach(f => {
+        const pl = { p: f.properties, t: null, size: 0, mw: 0 };
+        pl.marker = L.marker([f.geometry.coordinates[1], f.geometry.coordinates[0]], { title: "", alt: f.properties.n })
+          .bindTooltip(() => `${esc(pl.p.n)} · ${fmtMW(pl.mw)}`, { direction: "top", className: "plant-tip" })
+          .bindPopup(() => plantPopup(pl), { autoPanPaddingTopLeft: panelPadding() });
+        plants.push(pl);
+      });
+      document.getElementById("plant-types").innerHTML = TYPE_KEYS.map(t => `
+        <li><label><input type="checkbox" data-type="${t}" checked>${shapeSvg(t, 14)}${PLANT_TYPES[t].label}
+          <span class="num" data-num="${t}"></span></label></li>`).join("");
+      document.querySelectorAll("#plant-types input").forEach(box => box.addEventListener("change", () => {
+        const g = plantGroups[box.dataset.type];
+        box.checked ? plantsLayer.addLayer(g) : plantsLayer.removeLayer(g);
+      }));
+      if (togglePlants.checked) plantsLayer.addTo(map);
+      buildChart();
+      setYear(TL.end);
+      renderSignals();
+      syncSat();
+    })
+    .catch(err => console.warn("Power plants unavailable:", err));
+  togglePlants.addEventListener("change", () => {
+    plantsGroup.classList.toggle("off", !togglePlants.checked);
+    togglePlants.checked ? plantsLayer.addTo(map) : map.removeLayer(plantsLayer);
+  });
+
+  // Each plant shows as its largest fuel that year, sized by everything it has online.
+  let yearTotals = { mw: 0, n: 0 };
+  function updatePlants() {
+    const stats = Object.fromEntries(TYPE_KEYS.map(t => [t, { n: 0, mw: 0 }]));
+    yearTotals = { mw: 0, n: 0 };
+    plants.forEach(pl => {
+      const mix = plantMix(pl.p.g, TL.year);
+      const total = mix.reduce((a, b) => a + b, 0);
+      if (!total) {
+        if (pl.t) plantGroups[pl.t].removeLayer(pl.marker);
+        pl.t = null;
+        return;
+      }
+      const t = TYPE_KEYS[mix.indexOf(Math.max(...mix))];
+      const size = plantSize(total);
+      mix.forEach((mw, i) => { stats[TYPE_KEYS[i]].mw += mw; });
+      stats[t].n += 1;
+      yearTotals.mw += total;
+      yearTotals.n += 1;
+      pl.mw = total;
+      if (t !== pl.t || size !== pl.size) {
+        pl.marker.setIcon(L.divIcon({ className: "plant-icon", html: shapeSvg(t, size, ""), iconSize: [size, size], iconAnchor: [size / 2, size / 2] }));
+        pl.marker.getTooltip().options.offset = [0, -size / 2];
+        if (pl.t !== t) {
+          if (pl.t) plantGroups[pl.t].removeLayer(pl.marker);
+          plantGroups[t].addLayer(pl.marker);
+        }
+        pl.t = t;
+        pl.size = size;
+      }
+      // Smaller plants sit above larger ones; the two supercomputer pins stay on top.
+      pl.marker.setZIndexOffset(-5000 - Math.round(total));
+      if (pl.marker.isPopupOpen()) pl.marker.getPopup().setContent(plantPopup(pl));
+    });
+    TYPE_KEYS.forEach(t => {
+      const el = document.querySelector(`[data-num="${t}"]`);
+      if (el) el.textContent = `${stats[t].n} · ${fmtMW(stats[t].mw)}`;
+    });
+  }
+
+  // ---------- Timeline bar ----------
+  const playBtn = document.getElementById("tl-play");
+  const rangeEl = document.getElementById("tl-range");
+  const yearEl = document.getElementById("tl-year");
+  const statsEl = document.getElementById("tl-stats");
+  const exitBtn = document.getElementById("tl-exit");
+  const chartEl = document.getElementById("tl-chart");
+  const PLAY_ICON = '<svg viewBox="0 0 12 12"><path d="M2 1 L11 6 L2 11 Z"/></svg>';
+  const PAUSE_ICON = '<svg viewBox="0 0 12 12"><path d="M2 1 H5 V11 H2 Z M7 1 H10 V11 H7 Z"/></svg>';
+  playBtn.innerHTML = PLAY_ICON;
+  // The data note stays open on wider screens; on phones it folds to save map space.
+  document.getElementById("tl-about").open = !phone.matches;
+  // Bottom-up stack: oldest fleet first, so the chart reads as layers added over time.
+  const STACK = ["hydro", "coal", "nuclear", "gas", "solar", "other"];
+
+  function buildChart() {
+    const years = TL.end - TL.start;
+    capacitySeries = [];
+    for (let y = TL.start; y <= TL.end; y++) {
+      const mix = [0, 0, 0, 0, 0, 0];
+      plants.forEach(pl => plantMix(pl.p.g, y).forEach((mw, i) => { mix[i] += mw; }));
+      capacitySeries.push(mix);
+    }
+    const max = Math.max(...capacitySeries.map(m => m.reduce((a, b) => a + b, 0)));
+    const top = Math.ceil(max / 10000) * 10000;
+    const lower = capacitySeries.map(() => 0);
+    const yPx = v => (100 - (v / top) * 100).toFixed(2);
+    const paths = STACK.map(t => {
+      const ti = TYPE_KEYS.indexOf(t);
+      const upper = capacitySeries.map((m, i) => lower[i] + m[ti]);
+      const d = "M" + upper.map((v, i) => `${i} ${yPx(v)}`).join(" L") + " L" +
+        lower.map((v, i) => `${i} ${yPx(v)}`).reverse().join(" L") + " Z";
+      upper.forEach((v, i) => { lower[i] = v; });
+      return `<path class="t-${t}" d="${d}"><title>${PLANT_TYPES[t].label}</title></path>`;
+    }).join("");
+    chartEl.setAttribute("viewBox", `0 0 ${years} 100`);
+    chartEl.innerHTML = paths + `<line class="tl-cursor" id="tl-cursor" x1="0" x2="0" y1="0" y2="100"/>`;
+    document.getElementById("tl-max").textContent = `Capacity online by fuel · 0–${top / 1000} GW`;
+    rangeEl.min = TL.start;
+    rangeEl.max = TL.end;
+    const ticks = chartEl.getBoundingClientRect().width < 420 ? [TL.start, 1950, 1990, TL.end] : [TL.start, 1930, 1950, 1970, 1990, 2010, TL.end];
+    document.getElementById("tl-axis").innerHTML = ticks
+      .map(y => `<span style="left:${((y - TL.start) / years * 100).toFixed(2)}%">${y}</span>`).join("");
+  }
+
+
+  // Three readouts computed from the data: what shrank, what spread, and what the newcomer adds.
+  function renderSignals() {
+    if (!capacitySeries || !lineItems.length) return;
+    const at = (y, t) => capacitySeries[y - TL.start][TYPE_KEYS.indexOf(t)] / 1000;
+    const total2025 = capacitySeries[TL.end - TL.start].reduce((a, b) => a + b, 0) / 1000;
+    const miBy = y => Math.round(lineItems.reduce((a, it) => a + (it.p.y <= y ? it.km : 0), 0) * 0.621371);
+    const XAI_PEAK_GW = 1.775; // 69 mobile units, Jul 2026 (Scientific American)
+    document.getElementById("signals").innerHTML = [
+      [`<span class="down">${at(2010, "coal").toFixed(1)}→${at(TL.end, "coal").toFixed(1)}</span>`, "GW of coal, 2010 → 2025", "Retired or converted to gas"],
+      [`${(miBy(TL.end) / miBy(1935)).toFixed(0)}×`, `transmission line-miles since 1935`, `${miBy(1935).toLocaleString("en-US")} → ${miBy(TL.end).toLocaleString("en-US")} mi`],
+      [`<span class="up">${Math.round(XAI_PEAK_GW / total2025 * 100)}%</span>`, "xAI's off-grid turbines vs. the zone's fleet", `${XAI_PEAK_GW} GW at peak, beside ${total2025.toFixed(1)} GW on the grid`]
+    ].map(([big, a, b]) => `<li><b>${big}</b><span>${a}</span><span>${b}</span></li>`).join("");
+  }
+  function renderStats() {
+    const lineMi = Math.round(lineItems.reduce((a, it) => a + (it.p.y <= TL.year ? it.km : 0), 0) * 0.621371);
+    const plantsText = `<b>${fmtMW(yearTotals.mw)}</b> online at ${yearTotals.n} plants`;
+    statsEl.innerHTML = TL.on
+      ? `${plantsText} · <b>${lineMi.toLocaleString("en-US")} mi</b> of transmission lines`
+      : `Today: ${plantsText}. Press play or drag to go back in time.`;
+  }
+  function renderNote() {
+    const share = lineShare;
+    const pct = v => `${Math.round(v * 100)}%`;
+    document.getElementById("tl-note").textContent =
+      "Plants: EIA-860 generators; retirements are recorded only since 1995. " +
+      (share ? `Lines: today's network (HIFLD). In-service years are recorded for ${pct(share["0"])} of line-miles (OpenStreetMap). ` +
+        "The rest are estimated from dependencies: a line enters service once both of its ends exist (substations reached by recorded lines or power plants), " +
+        "branch lines follow the era of nearby recorded lines, and no estimate predates the usual first year for its voltage. Estimated lines are drawn faded." : "");
+  }
+
+  function applyMode() {
+    syncLines(true);
+    restack();
+    exitBtn.hidden = !TL.on;
+    renderStats();
+  }
+  function setMode(on) {
+    if (TL.on === on) return;
+    TL.on = on;
+    applyMode();
+    // First time into the timeline from the default view: frame the TVA area, where the change happens.
+    if (on && autoFit) {
+      autoFit = false;
+      map.flyToBounds(TVA_BOUNDS, { ...fitOpts(), duration: 1.2 });
+    }
+  }
+  function setYear(y) {
+    TL.year = Math.max(TL.start, Math.min(TL.end, y));
+    rangeEl.value = TL.year;
+    yearEl.textContent = TL.year;
+    document.getElementById("tl-cursor")?.setAttribute("x1", TL.year - TL.start);
+    document.getElementById("tl-cursor")?.setAttribute("x2", TL.year - TL.start);
+    updatePlants();
+    syncLines(false);
+    syncXai();
+    scheduleSatRedraw();
+    renderStats();
+  }
+
+  // Scrubbing is throttled to one update per frame.
+  let pendingYear = null;
+  function scrubTo(y) {
+    stopPlaying();
+    setMode(true);
+    if (pendingYear === null) requestAnimationFrame(() => { setYear(pendingYear); pendingYear = null; });
+    pendingYear = y;
+  }
+  rangeEl.addEventListener("input", () => scrubTo(+rangeEl.value));
+  const yearAt = e => {
+    const r = chartEl.getBoundingClientRect();
+    return Math.round(TL.start + (e.clientX - r.left) / r.width * (TL.end - TL.start));
+  };
+  chartEl.addEventListener("pointerdown", e => {
+    chartEl.setPointerCapture(e.pointerId);
+    scrubTo(yearAt(e));
+  });
+  chartEl.addEventListener("pointermove", e => { if (e.buttons) scrubTo(yearAt(e)); });
+
+  function stopPlaying() {
+    if (!TL.timer) return;
+    clearInterval(TL.timer);
+    TL.timer = null;
+    playBtn.innerHTML = PLAY_ICON;
+    playBtn.setAttribute("aria-label", "Play the timeline");
+  }
+  playBtn.addEventListener("click", () => {
+    if (TL.timer) return stopPlaying();
+    setMode(true);
+    if (TL.year >= TL.end) setYear(TL.start);
+    playBtn.innerHTML = PAUSE_ICON;
+    playBtn.setAttribute("aria-label", "Pause the timeline");
+    TL.timer = setInterval(() => (TL.year >= TL.end ? stopPlaying() : setYear(TL.year + 1)), 140);
+  });
+  exitBtn.addEventListener("click", () => {
+    stopPlaying();
+    setMode(false);
+    setYear(TL.end);
+  });
+
+  // Keep map controls clear of the timeline bar.
+  new ResizeObserver(() => {
+    document.documentElement.style.setProperty("--tl-h", `${timelineEl.offsetHeight + 16}px`);
+  }).observe(timelineEl);
+
+  // ---------- xAI's off-grid gas turbines (Southaven, MS) and the Colossus 2 data center they power ----------
+  const XAI_SOURCES = [
+    ["https://earthjustice.org/document/naacp-sues-xai-for-clean-air-act-violations-complaint", "NAACP complaint"],
+    ["https://www.scientificamerican.com/article/spacexais-colossus-data-center-is-fueling-a-massive-backlash/", "Scientific American"],
+    ["https://ourtupelo.com/state-sets-dates-to-retire-temporary-xai-turbines-but-allows-some-to-go-past-original-deadline/", "Mississippi Today"]
+  ].map(([url, name]) => `<a href="${url}" target="_blank" rel="noopener">${name} ↗</a>`).join(" · ");
+  const XAI_SITES = [
+    {
+      id: "southaven", start: 2025, lat: 34.98203, lng: -90.04071, label: "xAI turbines", dir: "bottom",
+      popup: `
+        <div class="pop pop--colossus">
+          <h2>xAI gas turbines</h2>
+          <p class="sub">MZX Tech LLC (xAI) · 2875 Stanton Rd S, Southaven, MS · former Duke Energy plant site</p>
+          <dl>
+            <dt>Why</dt><dd>Power for Colossus 2, about 1.2 mi north across the Tennessee line, supplied directly rather than through the grid. MLGW and TVA could not deliver that much power on xAI's timeline</dd>
+            <dt>Mobile units</dt><dd>3 in Aug 2025, 27 by Dec 2025, 69 (about 1,775 MW) by Jul 2026. Mississippi regulators (MDEQ) let them run without air permits as temporary "mobile" equipment</dd>
+            <dt>Permanent</dt><dd>41 turbines, about 1.2 GW, permitted Mar 10, 2026 with a NOx cap of 423 t/yr; the permit is under appeal</dd>
+            <dt>Phase-out</dt><dd>Mobile units retire Aug 2026 – Jul 2027 under a Jul 2026 MDEQ agreement; 11 shut down Aug 31, 2026</dd>
+            <dt>Lawsuit</dt><dd>NAACP v. xAI, filed Apr 14, 2026 in federal court in Mississippi; pending</dd>
+          </dl>
+          <p class="coords">34.9820° N, 90.0407° W · behind the meter, so not in EIA's plant data</p>
+          ${XAI_SOURCES}
+        </div>`
+    },
+    {
+      id: "colossus2", start: 2025, lat: 34.99798, lng: -90.03487, label: "Colossus 2", dir: "right", dc: true,
+      popup: `
+        <div class="pop pop--colossus">
+          <h2>Colossus 2</h2>
+          <p class="sub">xAI data center · 5420 Tulane Rd, Whitehaven, Memphis, TN</p>
+          <dl>
+            <dt>Power</dt><dd>Mostly from xAI's own gas turbines in Southaven, MS, about 1.2 mi south. MLGW said in Jul 2025 it was not supplying power to the site</dd>
+            <dt>Colossus 1</dt><dd>About 8 mi northwest on Paul R. Lowry Rd</dd>
+          </dl>
+          <p class="coords">34.9980° N, 90.0349° W</p>
+          ${XAI_SOURCES}
+        </div>`
+    }
+  ];
+  const xaiToggle = document.getElementById("toggle-xai");
+  const xaiLayer = L.layerGroup().addTo(map);
+  const xaiItems = XAI_SITES.map(site => {
+    const icon = site.dc
+      ? L.divIcon({ className: "site-icon", html: '<span class="pin pin--colossus"><span class="ring"></span><span class="dot"></span></span>', iconSize: [24, 24], iconAnchor: [12, 12], popupAnchor: [0, -10] })
+      : L.divIcon({ className: "xai-icon", html: '<svg viewBox="0 0 20 20" width="22" height="22" aria-hidden="true"><path d="M10 1.5 L19 18 H1 Z"/></svg>', iconSize: [22, 22], iconAnchor: [11, 11] });
+    const marker = L.marker([site.lat, site.lng], { icon, title: site.label, alt: site.label, zIndexOffset: 500 })
+      .bindPopup(site.popup, { maxWidth: 320, minWidth: 260, autoPanPaddingTopLeft: panelPadding() })
+      .bindTooltip(site.label, { permanent: true, direction: site.dir, offset: site.dir === "bottom" ? [0, 12] : [12, 0], className: "xai-label" });
+    return { site, marker };
+  });
+  // The supply route is not public: a straight dashed line just ties the turbines to the data center they power.
+  const xaiLink = L.polyline(XAI_SITES.map(s => [s.lat, s.lng]), { className: "xai-link", interactive: false });
+  function syncXai() {
+    const on = xaiToggle.checked;
+    xaiItems.forEach(({ site, marker }) => {
+      const want = on && (!TL.on || TL.year >= site.start);
+      want ? xaiLayer.addLayer(marker) : xaiLayer.removeLayer(marker);
+    });
+    on && (!TL.on || TL.year >= 2025) ? xaiLayer.addLayer(xaiLink) : xaiLayer.removeLayer(xaiLink);
+  }
+  syncXai();
+  xaiToggle.addEventListener("change", syncXai);
+
+  // ---------- County census shading: ACS 2020–2024 5-year estimates, 2025 Gazetteer land area ----------
+  let countiesLayer = null, countyVar = "", countyBreaks = [], countyData = null;
+  const COUNTY_VARS = {
+    dens: { full: v => `${Math.round(v).toLocaleString("en-US")} people per sq mi`, short: v => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`) },
+    inc: { full: v => `$${Math.round(v).toLocaleString("en-US")} median household income`, short: v => `$${Math.round(v / 1000)}k` },
+    pov: { full: v => `${v.toFixed(1)}% below the poverty line`, short: v => `${Math.round(v)}%` }
+  };
+  const SEQ = ["--seq1", "--seq2", "--seq3", "--seq4", "--seq5"];
+  const countySelect = document.getElementById("county-var");
+  const countyLegend = document.getElementById("county-legend");
+  const countyClass = v => { let i = 0; while (i < countyBreaks.length && v >= countyBreaks[i]) i++; return i; };
+  function countyStyle(p, hover) {
+    const v = p[countyVar];
+    return {
+      color: hover ? palette["--text"] : palette["--surface-solid"], weight: hover ? 2 : 0.6, opacity: 1,
+      fillColor: v == null ? palette["--muted"] : palette[SEQ[countyClass(v)]], fillOpacity: v == null ? 0.15 : 0.72
+    };
+  }
+  function countyPopup(p) {
+    const rows = [
+      `Population: ${p.pop.toLocaleString("en-US")}`,
+      p.dens != null && COUNTY_VARS.dens.full(p.dens),
+      p.inc != null && COUNTY_VARS.inc.full(p.inc),
+      p.pov != null && COUNTY_VARS.pov.full(p.pov),
+      p.share < 0.95 && `About ${Math.round(p.share * 100)}% of the county is in the TVA area`,
+      "ACS 2020–2024 5-year estimates"
+    ].filter(Boolean).map(r => `<span>${r}</span>`).join("");
+    return `<div class="state-pop"><strong>${esc(p.name)}</strong>${rows}</div>`;
+  }
+  function applyCounties() {
+    statesLayer?.eachLayer(l => l.setStyle(stateStyle(l.feature.properties.name, false)));
+    if (!countyVar || !countyData) {
+      if (countiesLayer) map.removeLayer(countiesLayer);
+      countyLegend.hidden = true;
+      return;
+    }
+    // Quintiles across the TVA-area counties: five classes with about the same number of counties each.
+    const vals = countyData.features.map(f => f.properties[countyVar]).filter(v => v != null).sort((a, b) => a - b);
+    countyBreaks = [0.2, 0.4, 0.6, 0.8].map(q => vals[Math.floor(q * vals.length)]);
+    if (!countiesLayer) {
+      countiesLayer = L.geoJSON(countyData, {
+        renderer: canvas,
+        attribution: "Counties: U.S. Census Bureau ACS 2020–2024 via Census Reporter",
+        onEachFeature: (f, layer) => {
+          layer.on("mouseover", () => layer.setStyle(countyStyle(f.properties, true)));
+          layer.on("mouseout", () => layer.setStyle(countyStyle(f.properties, false)));
+          layer.on("click", e => {
+            L.popup({ autoPanPaddingTopLeft: panelPadding() }).setLatLng(e.latlng).setContent(countyPopup(f.properties)).openOn(map);
+          });
+        }
+      });
+    }
+    countiesLayer.eachLayer(l => l.setStyle(countyStyle(l.feature.properties, false)));
+    if (!map.hasLayer(countiesLayer)) countiesLayer.addTo(map);
+    restack();
+    countyLegend.innerHTML = SEQ.map(k => `<span style="background:${palette[k]}"></span>`).join("") +
+      [vals[0], ...countyBreaks].map(v => `<em>${COUNTY_VARS[countyVar].short(v)}+</em>`).join("");
+    countyLegend.hidden = false;
+  }
+  fetch(dataUrl("tva-counties.geojson"))
+    .then(r => r.json())
+    .then(data => { countyData = data; applyCounties(); })
+    .catch(err => console.warn("County data unavailable:", err));
+  countySelect.addEventListener("change", () => { countyVar = countySelect.value; applyCounties(); });
+
+  // ---------- Air-quality monitors: EPA AirData 2025 annual summaries ----------
+  const airToggle = document.getElementById("toggle-air");
+  const airVarSel = document.getElementById("air-var");
+  const airOpts = document.getElementById("air-opts");
+  const airLayer = L.layerGroup([], { attribution: "Air monitors: U.S. EPA AirData 2025" });
+  let airData = null;
+  // Standards: PM2.5 annual mean 9.0 µg/m³; ozone 70 ppb. One year of data is indicative only.
+  const AIR = {
+    pm: { std: 9.0, text: v => v.toFixed(1) },
+    o3: { std: 70, text: v => String(v) }
+  };
+  const airStatus = (kind, v) => (v > AIR[kind].std ? "over" : v >= 0.9 * AIR[kind].std ? "near" : "ok");
+  function airPopup(p) {
+    const rows = [
+      p.pm != null && `PM2.5 annual mean: ${p.pm.toFixed(1)} µg/m³ (standard 9.0)`,
+      p.o3 != null && `Ozone, 4th-highest 8-hour: ${p.o3} ppb (standard 70)`,
+      esc(p.county),
+      "2025 only; official compliance uses 3-year averages",
+      `EPA site ${esc(p.id)}`
+    ].filter(Boolean).map(r => `<span>${r}</span>`).join("");
+    return `<div class="state-pop"><strong>${esc(p.name)}</strong>${rows}</div>`;
+  }
+  function buildAir() {
+    if (!airData) return;
+    airLayer.clearLayers();
+    const kind = airVarSel.value;
+    airData.features.forEach(f => {
+      const p = f.properties, v = p[kind];
+      if (v == null) return;
+      const st = airStatus(kind, v);
+      L.marker([f.geometry.coordinates[1], f.geometry.coordinates[0]], {
+        icon: L.divIcon({ className: "aq-icon", html: `<span class="aq aq--${st}">${st === "over" ? "▲ " : ""}${AIR[kind].text(v)}</span>`, iconSize: null }),
+        title: "", alt: p.name, zIndexOffset: 200
+      })
+        .bindPopup(airPopup(p), { autoPanPaddingTopLeft: panelPadding() })
+        .addTo(airLayer);
+    });
+  }
+  fetch(dataUrl("tva-air-monitors.geojson"))
+    .then(r => r.json())
+    .then(data => { airData = data; buildAir(); })
+    .catch(err => console.warn("Air monitors unavailable:", err));
+  airToggle.addEventListener("change", () => {
+    airOpts.hidden = !airToggle.checked;
+    airToggle.checked ? airLayer.addTo(map) : map.removeLayer(airLayer);
+  });
+  airVarSel.addEventListener("change", buildAir);
+
+  // ---------- Transportation noise: U.S. DOT BTS National Transportation Noise Map 2022 (road, rail, aviation) ----------
+  const noiseToggle = document.getElementById("toggle-noise");
+  const noiseLayer = L.tileLayer(
+    "https://tiles.arcgis.com/tiles/xOi1kZaI0eWDREZv/arcgis/rest/services/NTAD_Noise_2022_CONUS_aviation_rail_road/MapServer/tile/{z}/{y}/{x}",
+    {
+      maxNativeZoom: 12, maxZoom: 16, opacity: 0.65, zIndex: 2,
+      attribution: 'Noise: <a href="https://www.bts.gov/geospatial/national-transportation-noise-map">U.S. DOT BTS National Transportation Noise Map</a> 2022, not for evaluating individual locations'
+    }
+  );
+  noiseToggle.addEventListener("change", () => {
+    document.getElementById("noise-legend").hidden = !noiseToggle.checked;
+    noiseToggle.checked ? noiseLayer.addTo(map) : map.removeLayer(noiseLayer);
+  });
+
+  // ---------- Theme: dark (default) or light, remembered per browser ----------
+  let outsideVeil = null;
+  const veilStyle = () => (document.documentElement.dataset.theme === "light"
+    ? { fillColor: "#f4f4f4", fillOpacity: 0.72 } : { fillColor: "#050506", fillOpacity: 0.66 });
+  const themeBtn = document.getElementById("theme-btn");
+  const SUN = '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3"/></svg>';
+  const MOON = '<svg viewBox="0 0 16 16"><path d="M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z"/></svg>';
+  function setTheme(t) {
+    document.documentElement.dataset.theme = t;
+    try { localStorage.setItem("theme", t); } catch (e) { /* private mode: theme just isn't remembered */ }
+    const isDark = t !== "light";
+    themeBtn.innerHTML = isDark ? SUN : MOON;
+    themeBtn.setAttribute("aria-label", isDark ? "Switch to light mode" : "Switch to dark mode");
+    base.setUrl(esri("Base", isDark));
+    labels.setUrl(esri("Reference", isDark));
+    readPalette();
+    statesLayer?.eachLayer(l => l.setStyle(stateStyle(l.feature.properties.name, false)));
+    lineItems.forEach(it => it.layer.setStyle(netStyle(it.p, false)));
+    outsideVeil?.setStyle(veilStyle());
+    if (countyVar) applyCounties();
+  }
+  themeBtn.innerHTML = document.documentElement.dataset.theme === "light" ? MOON : SUN;
+  themeBtn.addEventListener("click", () => setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light"));
+
+  // TVA power service area outline (from TVA's TVA_Power_Service_Area layer), drawn above the state shading.
+  map.createPane("tva");
+  map.getPane("tva").style.zIndex = 420;
+  map.createPane("outside");
+  map.getPane("outside").style.zIndex = 410;   // over states, counties and satellite patches; under the TVA border and markers
+  map.getPane("outside").style.pointerEvents = "none";
+  fetch(dataUrl("tva-service-area.geojson"))
+    .then(r => r.json())
+    .then(data => {
+      // Outside the TVA zone the world recedes: a dark veil with a blurred, feathered edge.
+      const parts = data.features[0].geometry.coordinates;
+      const holes = parts.map(poly => poly[0].map(([x, y]) => [y, x]));
+      outsideVeil = L.polygon([[[85, -179], [85, 179], [-85, 179], [-85, -179]], ...holes], {
+        renderer: L.svg({ pane: "outside", padding: 1 }), interactive: false, stroke: false,
+        ...veilStyle(), className: "outside-fade"
+      }).addTo(map);
+      const sqmi = (Math.round(data.features[0].properties.sq_mi / 100) * 100).toLocaleString("en-US");
+      const line = L.geoJSON(data, {
+        pane: "tva",
+        interactive: false,
+        style: { className: "tva-line", fill: false, weight: 2.5 },
+        attribution: 'Service area &copy; <a href="https://www.tva.com/">TVA</a>'
+      }).addTo(map);
+      // A wide transparent copy of the border makes it easy to click.
+      L.geoJSON(data, { pane: "tva", style: { className: "tva-hit", fill: false, weight: 14 } })
+        .bindPopup(`<div class="state-pop"><strong>TVA power service area</strong><span>About ${sqmi} sq mi across 7 states. Both supercomputer sites are inside it.</span></div>`,
+          { autoPanPaddingTopLeft: panelPadding() })
+        .on("mouseover", () => line.getLayers()[0].getElement().classList.add("is-hover"))
+        .on("mouseout", () => line.getLayers()[0].getElement().classList.remove("is-hover"))
+        .addTo(map);
+    })
+    .catch(err => console.warn("TVA boundary unavailable:", err));
+
+  // Line + distance between the two sites.
+  const [a, b] = SITES.map(s => L.latLng(s.lat, s.lng));
+  const meters = a.distanceTo(b);
+  const distText = `${Math.round(meters / 1609.344)} mi · ${Math.round(meters / 1000)} km`;
+  document.getElementById("dist").textContent = distText;
+  const link = L.polyline([a, b], { className: "link-line", interactive: false })
+    .bindTooltip(`${Math.round(meters / 1609.344)} mi`, { permanent: true, direction: "center", className: "link-label" })
+    .addTo(map);
+  // Zoomed far out, the distance label collides with the site labels.
+  const syncLinkLabel = () => (map.getZoom() >= 5 ? link.openTooltip() : link.closeTooltip());
+  map.on("zoomend", syncLinkLabel);
+  syncLinkLabel();
+
+  // Site markers.
+  const buttons = document.querySelectorAll(".site");
+  function setActive(id) {
+    buttons.forEach(btn => btn.setAttribute("aria-pressed", String(btn.dataset.site === id)));
+  }
+
+  const markers = {};
+  SITES.forEach(s => {
+    const icon = L.divIcon({
+      className: "site-icon",
+      html: `<span class="pin pin--${s.id}"><span class="ring"></span><span class="dot"></span></span>`,
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
+      popupAnchor: [0, -10]
+    });
+    const m = L.marker([s.lat, s.lng], { icon, title: s.name, alt: s.name, riseOnHover: true })
+      .bindPopup(s.popup, { maxWidth: 300, minWidth: 240 })
+      .bindTooltip(s.name, { permanent: true, direction: "right", offset: [12, 0], className: "site-label" })
+      .addTo(map);
+    m.on("popupopen", () => setActive(s.id));
+    m.on("popupclose", () => setActive(null));
+    markers[s.id] = m;
+  });
+
+
+  // ---------- Satellite views: Esri World Imagery, fetched as one still image per site ----------
+  const SAT_ATTR = "Imagery © Esri, Vantor, Earthstar Geographics";
+  function satUrl(lat, lng, widthKm = 1.8) {
+    const dx = widthKm / 2 / (111.32 * Math.cos(lat * Math.PI / 180)), dy = widthKm / 3 / 110.57;  // 3:2 frame
+    return "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?" +
+      `bbox=${(lng - dx).toFixed(5)},${(lat - dy).toFixed(5)},${(lng + dx).toFixed(5)},${(lat + dy).toFixed(5)}` +
+      "&bboxSR=4326&imageSR=3857&size=600,400&format=jpg&f=image";
+  }
+  const SAT_VIEWS = [
+    { marker: markers.frontier, lat: 35.9301, lng: -84.3119, km: 2.4, title: "Oak Ridge National Laboratory" },
+    { marker: markers.colossus, lat: 35.05991, lng: -90.15632, km: 1.6, title: "Colossus 1 · former Electrolux plant" },
+    ...xaiItems.map(({ site, marker }) => ({ marker, lat: site.lat, lng: site.lng, km: site.dc ? 1.4 : 1.2, title: site.dc ? "Colossus 2 · Tulane Rd" : "xAI turbine yard · Southaven" }))
+  ];
+  const satCard = document.getElementById("sat-card");
+  const satImg = satCard.querySelector("img"), satCap = satCard.querySelector("figcaption");
+  function placeCard(e) {
+    const x = e.originalEvent.clientX, y = e.originalEvent.clientY, w = 300, h = satCard.offsetHeight || 240;
+    satCard.style.left = `${Math.min(innerWidth - w - 12, x + 18)}px`;
+    satCard.style.top = `${y - h - 18 < 8 ? y + 18 : y - h - 18}px`;
+  }
+  SAT_VIEWS.forEach(v => {
+    const url = satUrl(v.lat, v.lng, v.km);
+    new Image().src = url;  // warm the cache so the hover card appears instantly
+    v.marker.on("mouseover", e => {
+      satImg.src = url;
+      satCap.innerHTML = `<b>${esc(v.title)}</b> · ${v.km} km across · ${SAT_ATTR}`;
+      placeCard(e);
+      satCard.classList.add("show");
+    });
+    v.marker.on("mousemove", placeCard);
+    v.marker.on("mouseout popupopen", () => satCard.classList.remove("show"));
+    // Touch screens have no hover: the same view leads the popup.
+    const pop = v.marker.getPopup();
+    pop.setContent(String(pop.getContent()).replace('<div class="pop', `<div class="pop`).replace(/(<div class="pop[^"]*">)/, `$1<img class="sat" src="${url}" alt="Satellite view of ${esc(v.title)}" loading="lazy">`));
+  });
+
+  // ---------- Satellite patches: imagery bleeds through the dark map around plants, in organic, fungal-edged blobs ----------
+  // Each tile is an Esri World Imagery tile, masked on a canvas by soft noisy blobs centred on generation sites.
+  map.createPane("satpatch");
+  map.getPane("satpatch").style.zIndex = 250;   // above the ash basemap, below states, lines and labels
+  map.getPane("satpatch").style.pointerEvents = "none";
+  const satToggle = document.getElementById("toggle-sat");
+  // Deterministic pseudo-random numbers per site, so a blob keeps its shape across tiles and redraws.
+  const rand = seed => () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+  const hashStr = t => [...t].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 2147483647, 7) || 1;
+  function patchSites() {
+    const out = [];
+    plants.forEach(pl => {
+      const mw = plantMix(pl.p.g, TL.on ? TL.year : TL.end).reduce((a, b) => a + b, 0);
+      if (mw) out.push({ ll: pl.marker.getLatLng(), km: 1.8 + Math.sqrt(mw) * 0.17, seed: hashStr(pl.p.n) });
+    });
+    const fixed = [[35.9301, -84.3119, "oak"], [35.05991, -90.15632, "colossus"]];
+    XAI_SITES.forEach(x => { if (!TL.on || TL.year >= x.start) fixed.push([x.lat, x.lng, x.id]); });
+    fixed.forEach(([lat, lng, id]) => out.push({ ll: L.latLng(lat, lng), km: 2.2, seed: hashStr(id) }));
+    return out;
+  }
+  function drawBlob(ctx, cx, cy, R, seed) {
+    const r = rand(seed), ph = [r() * 6.28, r() * 6.28, r() * 6.28], amp = [0.2 + r() * 0.1, 0.1 + r() * 0.08, 0.05];
+    const shape = (cx0, cy0, R0) => {
+      ctx.beginPath();
+      for (let i = 0; i <= 64; i++) {
+        const a = i / 64 * Math.PI * 2;
+        const k = 1 + amp[0] * Math.sin(3 * a + ph[0]) + amp[1] * Math.sin(7 * a + ph[1]) + amp[2] * Math.sin(13 * a + ph[2]);
+        const x = cx0 + Math.cos(a) * R0 * k, y = cy0 + Math.sin(a) * R0 * k;
+        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+      ctx.closePath();
+    };
+    const soft = (x, y, R0) => {
+      const g = ctx.createRadialGradient(x, y, R0 * 0.35, x, y, R0 * 1.25);
+      g.addColorStop(0, "rgba(0,0,0,1)"); g.addColorStop(0.7, "rgba(0,0,0,0.75)"); g.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = g;
+    };
+    soft(cx, cy, R); shape(cx, cy, R); ctx.fill();
+    // Spores: a few small satellite islands scattered past the edge.
+    const n = 3 + Math.floor(r() * 5);
+    for (let i = 0; i < n; i++) {
+      const a = r() * Math.PI * 2, d = R * (1.15 + r() * 0.7), rs = R * (0.08 + r() * 0.18);
+      const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
+      soft(x, y, rs); shape(x, y, rs); ctx.fill();
+    }
+  }
+  const SatPatches = L.GridLayer.extend({
+    createTile(coords, done) {
+      const size = this.getTileSize(), tile = document.createElement("canvas");
+      tile.width = size.x; tile.height = size.y;
+      const origin = coords.scaleBy(size), mPerPx = 40075016 * Math.cos(35 * Math.PI / 180) / (256 * 2 ** coords.z);
+      const blobs = patchSites().map(b => {
+        const pt = map.project(b.ll, coords.z).subtract(origin);
+        return { x: pt.x, y: pt.y, R: Math.max(11, b.km * 1000 / mPerPx), seed: b.seed };
+      }).filter(b => b.x > -b.R * 2.2 && b.y > -b.R * 2.2 && b.x < size.x + b.R * 2.2 && b.y < size.y + b.R * 2.2);
+      if (!blobs.length) { setTimeout(() => done(null, tile)); return tile; }
+      const img = new Image();
+      img.onload = () => {
+        const ctx = tile.getContext("2d");
+        blobs.forEach(b => drawBlob(ctx, b.x, b.y, b.R, b.seed));
+        ctx.globalCompositeOperation = "source-in";  // keep imagery only inside the blobs
+        ctx.drawImage(img, 0, 0, size.x, size.y);
+        done(null, tile);
+      };
+      img.onerror = () => done(null, tile);
+      img.src = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${coords.z}/${coords.y}/${coords.x}`;
+      return tile;
+    }
+  });
+  const satLayer = new SatPatches({ pane: "satpatch", maxZoom: 16, updateWhenZooming: false,
+    attribution: "Satellite: Esri, Vantor, Earthstar Geographics" });
+  let satTimer = null;
+  function scheduleSatRedraw() {
+    if (!map.hasLayer(satLayer)) return;
+    clearTimeout(satTimer);
+    satTimer = setTimeout(() => satLayer.redraw(), TL.timer ? 700 : 250);
+  }
+  const syncSat = () => (satToggle.checked ? satLayer.addTo(map) : map.removeLayer(satLayer));
+  satToggle.addEventListener("change", syncSat);
+
+  // ---------- Records: reader-contributed testimony, observations and corrections ----------
+  // Stored in this browser (localStorage). Export produces GeoJSON-like JSON for sharing or import elsewhere.
+  const REC_KEY = "counter-map-records";
+  const recLayer = L.layerGroup().addTo(map);
+  const recList = document.getElementById("rec-list"), recAdd = document.getElementById("rec-add");
+  const recBanner = document.getElementById("rec-banner"), recExport = document.getElementById("rec-export");
+  const REC_TYPES = { testimony: "Testimony", observation: "Observation", correction: "Correction", memory: "Family memory" };
+  let records = [];
+  try { records = JSON.parse(localStorage.getItem(REC_KEY) || "[]"); } catch (e) { records = []; }
+  const saveRecords = () => { try { localStorage.setItem(REC_KEY, JSON.stringify(records)); } catch (e) { /* storage blocked: records last for this visit */ } };
+  const recIcon = r => L.divIcon({ className: "rec-icon", html: `<span>${r.type === "testimony" || r.type === "memory" ? "❝" : "＋"}</span>`, iconSize: [20, 20], iconAnchor: [10, 10] });
+  const recPopup = r => `<div class="rec-pop"><p class="t-kicker">${esc(REC_TYPES[r.type] || "Record")}${r.year ? " · " + esc(r.year) : ""} · reader record</p>
+      <blockquote><b>${esc(r.title)}</b>${r.text ? "<br>" + esc(r.text) : ""}</blockquote>
+      <p>${r.name ? esc(r.name) + " · " : ""}added ${esc(r.added.slice(0, 10))}</p>
+      ${r.link ? `<p><a href="${esc(r.link)}" target="_blank" rel="noopener nofollow">source ↗</a></p>` : ""}
+      <button type="button" data-del="${r.id}">Delete this record</button></div>`;
+  function renderRecords() {
+    recLayer.clearLayers();
+    recList.innerHTML = "";
+    records.forEach(r => {
+      const m = L.marker([r.lat, r.lng], { icon: recIcon(r), title: r.title, zIndexOffset: 800 }).bindPopup(() => recPopup(r), { autoPanPaddingTopLeft: panelPadding() }).addTo(recLayer);
+      const li = document.createElement("li");
+      li.innerHTML = `<i></i><b>${esc(r.title)}</b><span>${esc(REC_TYPES[r.type] || "Record")}${r.year ? " · " + esc(r.year) : ""}</span>`;
+      li.addEventListener("click", () => { autoFit = false; map.flyTo([r.lat, r.lng], Math.max(map.getZoom(), 11), { duration: 1.2 }); map.once("moveend", () => m.openPopup()); });
+      recList.appendChild(li);
+    });
+    recExport.hidden = !records.length;
+  }
+  map.on("popupopen", e => {
+    const btn = e.popup.getElement()?.querySelector("[data-del]");
+    if (btn) btn.addEventListener("click", () => {
+      records = records.filter(r => r.id !== btn.dataset.del); saveRecords(); map.closePopup(); renderRecords();
+    });
+  });
+  // Placing: the next click on the map drops the record there (captured before any layer sees it).
+  function setPlacing(on) {
+    document.body.classList.toggle("placing", on);
+    recBanner.hidden = !on;
+    recAdd.setAttribute("aria-pressed", String(on));
+  }
+  recAdd.addEventListener("click", () => setPlacing(!document.body.classList.contains("placing")));
+  addEventListener("keydown", e => { if (e.key === "Escape") setPlacing(false); });
+  map.getContainer().addEventListener("click", e => {
+    if (!document.body.classList.contains("placing")) return;
+    e.stopPropagation(); e.preventDefault();
+    setPlacing(false);
+    openRecordForm(map.mouseEventToLatLng(e));
+  }, true);
+  function openRecordForm(ll) {
+    const form = L.DomUtil.create("form", "rec-form");
+    form.innerHTML = `<b class="rec-form-title">New record</b>
+      <label>Type<select name="type">${Object.entries(REC_TYPES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select></label>
+      <label>Title<input name="title" required maxlength="90" placeholder="What happened here?"></label>
+      <label>Account<textarea name="text" maxlength="1200" placeholder="In your words, or a source's"></textarea></label>
+      <div class="rec-row"><label>Year<input name="year" inputmode="numeric" maxlength="4" placeholder="1943"></label>
+      <label>Name (optional)<input name="name" maxlength="60"></label></div>
+      <label>Source link (optional)<input name="link" type="url" maxlength="300" placeholder="https://"></label>
+      <div class="rec-actions"><button type="submit">Save record</button><button type="button" class="ghost" data-cancel>Cancel</button></div>`;
+    L.DomEvent.disableClickPropagation(form);
+    const pop = L.popup({ minWidth: 260, autoPanPaddingTopLeft: panelPadding(), closeOnClick: false }).setLatLng(ll).setContent(form).openOn(map);
+    form.querySelector("[name=title]").focus();
+    form.querySelector("[data-cancel]").addEventListener("click", () => map.closePopup(pop));
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      const f = new FormData(form);
+      const link = String(f.get("link") || "").trim();
+      records.push({
+        id: Math.random().toString(36).slice(2, 10), lat: +ll.lat.toFixed(5), lng: +ll.lng.toFixed(5),
+        type: f.get("type"), title: String(f.get("title")).trim(), text: String(f.get("text") || "").trim(),
+        year: String(f.get("year") || "").trim(), name: String(f.get("name") || "").trim(),
+        link: /^https?:\/\//.test(link) ? link : "", added: new Date().toISOString()
+      });
+      saveRecords(); map.closePopup(pop); renderRecords();
+    });
+  }
+  recExport.addEventListener("click", () => {
+    const fc = { type: "FeatureCollection", features: records.map(({ lat, lng, ...p }) => ({ type: "Feature", properties: p, geometry: { type: "Point", coordinates: [lng, lat] } })) };
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(fc, null, 2)], { type: "application/geo+json" }));
+    a.download = "counter-map-records.geojson";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+  renderRecords();
+  function syncPopupPadding() {
+    const p = panelPadding();
+    Object.values(markers).forEach(m => { m.getPopup().options.autoPanPaddingTopLeft = p; });
+  }
+  syncPopupPadding();
+  window.addEventListener("resize", syncPopupPadding);
+  details.addEventListener("toggle", syncPopupPadding);
+
+  function focusSite(id) {
+    const s = SITES.find(x => x.id === id);
+    autoFit = false;
+    map.closePopup();
+    map.once("moveend", () => markers[id].openPopup());
+    map.flyTo([s.lat, s.lng], 11, { duration: 1.4 });
+  }
+
+  buttons.forEach(btn => btn.addEventListener("click", () => focusSite(btn.dataset.site)));
+  document.getElementById("show-both").addEventListener("click", () => {
+    autoFit = false;
+    map.closePopup();
+    map.flyToBounds(L.latLngBounds([a, b]), { ...fitOpts(), duration: 1.2 });
+  });
+  document.getElementById("reset").addEventListener("click", () => {
+    autoFit = true;
+    map.closePopup();
+    map.flyToBounds(SEABOARD_BOUNDS, { ...fitOpts(), duration: 1.2 });
+  });
+</script>
+</body>
+</html>
