@@ -548,6 +548,44 @@
   .rec-pop .t-kicker { margin: 0 0 6px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--tool); }
   .rec-pop blockquote { margin: 0 0 8px; font-size: 14.5px; line-height: 1.45; }
   .rec-pop p { margin: 0; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+  .rec-exports { display: flex; flex-wrap: wrap; gap: 8px; }
+  .rec-form .rec-check { display: flex; gap: 8px; align-items: flex-start; text-transform: none; letter-spacing: 0; font-family: var(--font); font-size: 12px; }
+  .rec-form .rec-check input { width: auto; margin-top: 2px; }
+
+  /* ---------- Provenance chips: what kind of claim, from what kind of source ---------- */
+  .prov { display: flex; flex-wrap: wrap; gap: 4px 6px; margin: 6px 0 2px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.03em; text-transform: uppercase; }
+  .prov b, .prov i { font-weight: 500; font-style: normal; padding: 1px 5px; border: 1px solid var(--border); color: var(--muted); }
+  .prov .st { color: var(--text); border-color: var(--text); }
+  .prov .st--alleged, .prov .st--filed_allegation { color: var(--warn); border-color: var(--warn); }
+  .prov .st--ruled, .prov .st--permitted, .prov .st--approved { color: var(--text); border-style: solid; }
+  .prov .xr-excerpt { border-style: dashed; }
+  .prov a { color: var(--focus); text-decoration: none; padding: 1px 0; }
+  .state-pop .prov span, .pop .prov span { display: inline; }
+  .sub-note { margin: 6px 0 8px; font-size: 12px; line-height: 1.45; color: var(--muted); }
+  .sub-note a { color: var(--focus); }
+  .sub-legend .wide { flex-basis: 100%; }
+
+  /* ---------- The xAI record: date slider, counts readout, decisions list ---------- */
+  .xr-time { display: grid; gap: 4px; margin: 6px 0 4px; }
+  .xr-date { font-family: var(--mono); font-size: 13px; }
+  .xr-time input { width: 100%; accent-color: var(--colossus); }
+  .xr-readout { margin: 4px 0 0; font-size: 12.5px; line-height: 1.5; }
+  .xr-readout b { font-weight: 600; }
+  .xr-readout span { display: block; color: var(--muted); font-size: 11.5px; }
+  .xr-juris { margin-top: 6px; }
+  .xr-list, .about-list { list-style: none; margin: 8px 0 0; padding: 0; max-height: 300px; overflow-y: auto; }
+  .xr-list li, .about-list li { padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 12.5px; line-height: 1.4; }
+  .xr-list li { cursor: pointer; }
+  .xr-list li:hover .xr-what { text-decoration: underline; }
+  .xr-list time, .about-list .ab-id { display: block; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+  .about-list li span { display: block; color: var(--muted); font-size: 11.5px; }
+  .about-list a { color: var(--focus); }
+  .count-icon span { display: inline-block; padding: 2px 6px; font: 600 12px var(--mono); white-space: nowrap; color: var(--bg); background: var(--colossus); border: 1px solid var(--bg); }
+  .count-icon span.alleged { background: var(--warn); }
+  .dec-icon span { display: grid; place-items: center; width: 20px; height: 20px; font: 600 11px var(--mono); color: var(--text); background: var(--surface-solid); border: 1.5px solid var(--text); }
+  .ash-icon span, .well-icon span { display: block; width: 12px; height: 12px; background: var(--muted); border: 1.5px solid var(--text); }
+  .well-icon span { width: 9px; height: 9px; border-radius: 50%; background: var(--g-hydro); }
+  .c3-icon span { display: block; width: 14px; height: 14px; border: 2px dashed var(--colossus); border-radius: 50%; }
   .rec-pop button { margin-top: 8px; font-family: var(--mono); font-size: 10px; text-transform: uppercase; background: none; border: 0; border-bottom: 1px solid var(--muted); color: var(--muted); cursor: pointer; padding: 0; }
 </style>
 </head>
@@ -581,10 +619,13 @@
   </div>
 
   <section class="records" aria-label="Records">
-    <div class="rec-head"><h2>Records</h2><button class="rec-add" type="button" id="rec-add">＋ Add a record</button></div>
-    <p class="rec-note" id="rec-note">Add a testimony, observation or correction to a place on the map. Records are saved in this browser; export them to share.</p>
+    <div class="rec-head"><h2>Your notes</h2><button class="rec-add" type="button" id="rec-add">＋ Add a note</button></div>
+    <p class="rec-note" id="rec-note">Private notes: a testimony, observation or correction pinned to a place. They are saved only in this browser, and nobody else can see them. Export them, with how you know each one, to share.</p>
     <ol class="rec-list" id="rec-list"></ol>
-    <button class="btn" type="button" id="rec-export" hidden>Export records (JSON)</button>
+    <div class="rec-exports" id="rec-export" hidden>
+      <button class="btn" type="button" data-export="geojson">Export notes (GeoJSON)</button>
+      <button class="btn" type="button" data-export="csv">Export notes (CSV)</button>
+    </div>
   </section>
 
   <details class="more" open>
@@ -605,7 +646,7 @@
         <li><span class="key key-v key-v500"></span>500 kV</li>
         <li><span class="key key-v key-v230"></span>230 kV</li>
         <li><span class="key key-v key-v161"></span>100–161 kV</li>
-        <li><span class="key key-v key-vlow"></span>Under 100 kV</li>
+        <li><span class="key key-v key-vlow"></span>69 kV and below</li>
         <li><span class="key key-v key-vna"></span>Not listed</li>
         <li class="wide"><span class="key key-v key-est"></span>Faded on the timeline: year estimated</li>
       </ul>
@@ -621,6 +662,16 @@
         </select>
       </label>
       <div class="seq-legend" id="county-legend" hidden></div>
+      <label class="field">Block groups near the xAI sites, ACS 2020–2024
+        <select id="bg-var">
+          <option value="">Off</option>
+          <option value="black_pct">Black residents (non-Hispanic), %</option>
+          <option value="inc">Median household income</option>
+          <option value="pov_pct">Poverty rate</option>
+        </select>
+      </label>
+      <div class="seq-legend" id="bg-legend" hidden></div>
+      <p class="sub-note" id="bg-note" hidden>Estimates with margins of error (click a block group). Homes near the Southaven plant were reported changing hands in Oct 2026, so these 2020–2024 figures may not describe who lives there now.</p>
       <label class="layer-toggle"><input type="checkbox" id="toggle-air">Air-quality monitors, 2025</label>
       <div id="air-opts" hidden>
         <select class="sub-select" id="air-var" aria-label="Air pollutant">
@@ -634,13 +685,42 @@
         </div>
       </div>
       <label class="layer-toggle"><input type="checkbox" id="toggle-sat">Satellite patches around generation</label>
-      <label class="layer-toggle"><input type="checkbox" id="toggle-noise">Transportation noise, 2022</label>
+      <label class="layer-toggle"><input type="checkbox" id="toggle-noise">Transportation noise only <span class="hint">road, rail, air · 2022</span></label>
       <div class="sub-legend" id="noise-legend" hidden>
         <span><i style="background:#ffc107"></i>45</span><span><i style="background:#ff8000"></i>50</span><span><i style="background:#ff0000"></i>55</span>
         <span><i style="background:#ff3399"></i>60</span><span><i style="background:#a300cc"></i>70</span><span><i style="background:#5200cc"></i>80</span>
         <span><i style="background:#0000ff"></i>90+ dBA, 24-hour average</span>
+        <span class="wide">Modeled traffic noise. It does not include turbines or other industrial noise, and BTS says it is for trends, not for judging a location.</span>
       </div>
+      <label class="layer-toggle"><input type="checkbox" id="toggle-ash">Coal ash sites <span class="hint">Kingston, Allen</span></label>
+      <label class="layer-toggle"><input type="checkbox" id="toggle-npl">Oak Ridge Superfund site <span class="hint">listed 1989</span></label>
+      <label class="layer-toggle"><input type="checkbox" id="toggle-wells">Memphis aquifer wells <span class="hint">USGS</span></label>
     </div>
+  </details>
+
+  <details class="more" id="xai-record" open>
+    <summary>The xAI record, 2024–2027</summary>
+    <p class="sub-note">Counts, permits, filings and rulings around Colossus 1, Colossus 2 and the Southaven turbines, each tagged with what kind of claim it is. Allegations are not findings.</p>
+    <div class="xr-time">
+      <span class="xr-date" id="xr-date"></span>
+      <input type="range" id="xr-range" min="0" max="0" step="1" value="0" aria-label="Date in the xAI record">
+    </div>
+    <p class="xr-readout" id="xr-readout"></p>
+    <div class="layer-group">
+      <label class="layer-toggle"><input type="checkbox" id="toggle-counts" checked>Turbine counts <span class="hint">at the date above</span></label>
+      <label class="layer-toggle"><input type="checkbox" id="toggle-c3">Colossus 3 <span class="hint">planned, per the complaint</span></label>
+      <label class="layer-toggle"><input type="checkbox" id="toggle-juris">Who has authority <span class="hint">city, county, state lines</span></label>
+      <label class="layer-toggle"><input type="checkbox" id="toggle-decisions" checked>Decisions <span class="hint">votes, permits, filings, rulings</span></label>
+      <ul class="subgrid xr-juris" id="xr-juris"></ul>
+      <ol class="xr-list" id="xr-list"></ol>
+    </div>
+  </details>
+
+  <details class="more" id="about-data">
+    <summary>About this data</summary>
+    <p class="sub-note">Every source behind the map, with its tier: official (agency or court), community, self-reported, secondary (news, reference) or derived (estimated or modeled). Items marked "excerpt" were checked only from a search excerpt; open the source before quoting.</p>
+    <ol class="about-list" id="about-list"></ol>
+    <p class="sub-note"><a href="data/decisions.json" download>Decisions (JSON)</a> · <a href="data/turbines.json" download>Turbine counts (JSON)</a> · <a href="data/sources.json" download>Sources (JSON)</a>. Each row carries its status, source link and a "verified on" date.</p>
   </details>
 </aside>
 
@@ -662,7 +742,7 @@
     <div class="tl-axis" id="tl-axis"></div>
   </div>
   <details class="tl-about" id="tl-about">
-    <summary>About this data</summary>
+    <summary>How the timeline is built</summary>
     <p class="tl-note" id="tl-note"></p>
   </details>
 </section>
@@ -706,7 +786,11 @@
             <dt>Site</dt><dd>Former Electrolux plant, southwest Memphis</dd>
             <dt>Hardware</dt><dd>NVIDIA GPU cluster; launched in 2024 with 100,000 H100s and since expanded</dd>
             <dt>Used for</dt><dd>Training xAI's Grok models</dd>
-            <dt>Turbines</dt><dd>Ran up to 35 gas turbines (about 421 MW) on site in early 2025, most without permits; 15 permitted since July 2025 (247 MW)</dd>
+            <dt>Turbines</dt><dd>35 gas turbines (421.4 MW) on site by Mar 31, 2025, most without permits, as alleged in the NAACP complaint; SELC's aerial photos showed 35 on Apr 9, 2025
+              <div class="prov"><b class="st st--alleged">Alleged</b><i>Official</i><i>as of Mar 31, 2025</i><a href="https://storage.courtlistener.com/recap/gov.uscourts.msnd.52261/gov.uscourts.msnd.52261.1.0.pdf" target="_blank" rel="noopener">NAACP complaint ↗</a></div></dd>
+            <dt>Permit</dt><dd>15 permanent turbines permitted by the Shelby County Health Department on Jul 2, 2025<!-- SOURCE NEEDED: 247 MW is not in the Nov 2026 research package --> (247 MW). Appeals were dismissed as moot Dec 15, 2025
+              <div class="prov"><b class="st st--permitted">Permitted</b><i>Secondary</i><i>as of Jul 2, 2025</i><a href="https://www.selc.org/news/inside-memphis-fight-against-xai/" target="_blank" rel="noopener">SELC timeline ↗</a></div></dd>
+            <dt>Authority</dt><dd>Shelby County Health Dept (air permit); Memphis and Shelby County Air Pollution Control Board (appeals); TVA board (power over 100 MW); federal court (Clean Air Act suits)</dd>
             <dt>Colossus 2</dt><dd>Separate data center on Tulane Rd, Whitehaven, about 8 mi southeast, powered by xAI's turbines in Southaven, MS</dd>
           </dl>
           <p class="coords">35.0600° N, 90.1520° W</p>
@@ -770,9 +854,44 @@
   };
   readPalette();
   // Bump when any data file changes, so browsers never pair new code with a cached old file.
-  const DATA_VERSION = "2026-10-19";
+  const DATA_VERSION = "2026-11-11";
   const dataUrl = name => `${name}?v=${DATA_VERSION}`;
   const esc = t => String(t).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
+
+  // ---------- Provenance: every item says what kind of claim it is and where it comes from ----------
+  // Vocabulary follows the research package's record schema. An allegation is never shown as a finding.
+  const STATUS_LABEL = {
+    alleged: "Alleged", filed_allegation: "Filed · allegation", applied: "Applied", permitted: "Permitted", approved: "Approved",
+    regulator_stated: "Regulator-stated", observed: "Observed", reported: "Reported", ruled: "Ruled", estimated: "Estimated", documented: "Documented"
+  };
+  const TIER_LABEL = { official: "Official", community: "Community", self_reported: "Self-reported", secondary: "Secondary", derived: "Derived" };
+  const fmtDate = d => {
+    if (!d) return "";
+    const [y, m, day] = String(d).split("-");
+    const mon = m ? ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][+m - 1] : "";
+    return mon ? `${mon}${day ? ` ${+day},` : ""} ${y}` : y;
+  };
+  function prov(r) {
+    const tiers = String(r.tier || "").split("+").map(t => TIER_LABEL[t.trim()]).filter(Boolean).join(" + ");
+    return `<div class="prov">${[
+      r.status && `<b class="st st--${r.status}">${STATUS_LABEL[r.status] || esc(r.status)}</b>`,
+      tiers && `<i>${tiers}</i>`,
+      r.as_of && `<i>as of ${esc(fmtDate(r.as_of))}</i>`,
+      r.source_read === "excerpt" && `<i class="xr-excerpt" title="Checked only from a search excerpt; open the source before quoting">excerpt</i>`,
+      r.verified_on ? `<i>verified ${esc(fmtDate(r.verified_on))}</i>` : r.status && `<i>not yet re-verified</i>`,
+      r.source_url && `<a href="${esc(r.source_url)}" target="_blank" rel="noopener">${esc(r.source_name || "source")} ↗</a>`
+    ].filter(Boolean).join("")}</div>`;
+  }
+  // Dataset-level provenance for the background layers.
+  const DATASET = {
+    plants: { tier: "official", as_of: "2025", source_name: "EIA-860 2025", source_url: "https://www.eia.gov/electricity/data/eia860/" },
+    emissions: { tier: "official", as_of: "2025", source_name: "EPA Clean Air Markets", source_url: "https://campd.epa.gov/" },
+    lines: { tier: "official", source_name: "HIFLD transmission lines", source_url: "https://hifld-geoplatform.hub.arcgis.com/" },
+    linesEst: { tier: "official+derived", source_name: "HIFLD; year estimated", source_url: "https://hifld-geoplatform.hub.arcgis.com/" },
+    counties: { tier: "official", as_of: "2024", source_name: "ACS 2020–2024", source_url: "https://www.census.gov/programs-surveys/acs/news/data-releases/2024/release.html" },
+    air: { tier: "official", as_of: "2025", source_name: "EPA AirData", source_url: "https://www.epa.gov/outdoor-air-quality-data" },
+    tva: { tier: "official", as_of: "2016-12-08", source_name: "TVA_Power_Service_Area", source_url: "https://www.tva.com/" }
+  };
 
   // States: Tennessee shaded; any state is clickable.
   const stateStyle = (name, hover) => {
@@ -812,7 +931,8 @@
     "500": { weight: 2, color: "--v500", opacity: 0.95, label: "500 kV" },
     "230": { weight: 1.4, color: "--v230", opacity: 0.85, label: "220–287 kV" },
     "161": { weight: 0.9, color: "--v161", opacity: 0.75, label: "100–161 kV" },
-    "lt100": { weight: 0.6, color: "--vlow", opacity: 0.65, label: "Under 100 kV" },
+    // HIFLD covers 69 kV and up; this class is 69 kV lines, a few 46 kV ones, and some with no voltage listed.
+    "lt100": { weight: 0.6, color: "--vlow", opacity: 0.65, label: "69 kV and below" },
     "na": { weight: 0.5, color: "--vna", opacity: 0.6, label: "" }
   };
   const lineStyle = (c, hover) => {
@@ -867,7 +987,7 @@
   }
   function netPopup(p) {
     const when = p.m ? `In service: about ${p.y}` : `In service: ${p.y}${p.ya ? " (approximate)" : ""}`;
-    return linePopup(p).slice(0, -"</div>".length) + `<span>${when}</span><span>${YEAR_SOURCE[p.m]}</span></div>`;
+    return linePopup(p).slice(0, -"</div>".length) + `<span>${when}</span><span>${YEAR_SOURCE[p.m]}</span>${prov(p.m ? DATASET.linesEst : DATASET.lines)}</div>`;
   }
   fetch(dataUrl("tva-lines-timeline.geojson"))
     .then(r => r.json())
@@ -917,6 +1037,7 @@
   // One shared canvas: states stay at the back.
   function restack() {
     if (countiesLayer && map.hasLayer(countiesLayer)) countiesLayer.bringToBack();
+    if (bgLayer && map.hasLayer(bgLayer)) bgLayer.bringToBack();  // declared below; restack only runs after load
     statesLayer?.bringToBack();
   }
   toggleLines.addEventListener("change", () => {
@@ -969,7 +1090,7 @@
       p.out && "TVA-owned, just outside the service area",
       p.em && `2025 emissions (EPA): SO₂ ${p.em[0].toLocaleString("en-US")} t · NOx ${p.em[1].toLocaleString("en-US")} t · CO₂ ${(p.em[2] / 1e6).toFixed(2)} Mt`
     ].filter(Boolean).map(r => `<span>${r}</span>`).join("");
-    return `<div class="state-pop"><strong class="pop-title">${shapeSvg(pl.t || "other", 13)}${esc(p.n)}</strong>${rows}</div>`;
+    return `<div class="state-pop"><strong class="pop-title">${shapeSvg(pl.t || "other", 13)}${esc(p.n)}</strong>${rows}${prov(DATASET.plants)}${p.em ? prov(DATASET.emissions) : ""}</div>`;
   }
 
   const plantGroups = Object.fromEntries(TYPE_KEYS.map(t => [t, L.layerGroup()]));
@@ -1100,11 +1221,11 @@
     const at = (y, t) => capacitySeries[y - TL.start][TYPE_KEYS.indexOf(t)] / 1000;
     const total2025 = capacitySeries[TL.end - TL.start].reduce((a, b) => a + b, 0) / 1000;
     const miBy = y => Math.round(lineItems.reduce((a, it) => a + (it.p.y <= y ? it.km : 0), 0) * 0.621371);
-    const XAI_PEAK_GW = 1.775; // 69 mobile units, Jul 2026 (Scientific American)
+    const XAI_PEAK_GW = 1.775; // 69 mobile units, Jul 2026 (Scientific American). SOURCE NEEDED: not in the Nov 2026 research package; derived figure.
     document.getElementById("signals").innerHTML = [
       [`<span class="down">${at(2010, "coal").toFixed(1)}→${at(TL.end, "coal").toFixed(1)}</span>`, "GW of coal, 2010 → 2025", "Retired or converted to gas"],
       [`${(miBy(TL.end) / miBy(1935)).toFixed(0)}×`, `transmission line-miles since 1935`, `${miBy(1935).toLocaleString("en-US")} → ${miBy(TL.end).toLocaleString("en-US")} mi`],
-      [`<span class="up">${Math.round(XAI_PEAK_GW / total2025 * 100)}%</span>`, "xAI's off-grid turbines vs. the zone's fleet", `${XAI_PEAK_GW} GW at peak, beside ${total2025.toFixed(1)} GW on the grid`]
+      [`<span class="up">${Math.round(XAI_PEAK_GW / total2025 * 100)}%</span>`, "xAI's off-grid turbines vs. the zone's fleet", `about ${XAI_PEAK_GW} GW at peak (estimated), beside ${total2025.toFixed(1)} GW on the grid`]
     ].map(([big, a, b]) => `<li><b>${big}</b><span>${a}</span><span>${b}</span></li>`).join("");
   }
   function renderStats() {
@@ -1213,10 +1334,16 @@
           <p class="sub">MZX Tech LLC (xAI) · 2875 Stanton Rd S, Southaven, MS · former Duke Energy plant site</p>
           <dl>
             <dt>Why</dt><dd>Power for Colossus 2, about 1.2 mi north across the Tennessee line, supplied directly rather than through the grid. MLGW and TVA could not deliver that much power on xAI's timeline</dd>
-            <dt>Mobile units</dt><dd>3 in Aug 2025, 27 by Dec 2025, 69 (about 1,775 MW) by Jul 2026. Mississippi regulators (MDEQ) let them run without air permits as temporary "mobile" equipment</dd>
-            <dt>Permanent</dt><dd>41 turbines, about 1.2 GW, permitted Mar 10, 2026 with a NOx cap of 423 t/yr; the permit is under appeal</dd>
-            <dt>Phase-out</dt><dd>Mobile units retire Aug 2026 – Jul 2027 under a Jul 2026 MDEQ agreement; 11 shut down Aug 31, 2026</dd>
-            <dt>Lawsuit</dt><dd>NAACP v. xAI, filed Apr 14, 2026 in federal court in Mississippi; pending</dd>
+            <dt>Mobile units</dt><dd>18 by Aug 29, 2025; 27 by Jan 6, 2026; 69<!-- SOURCE NEEDED: "about 1,775 MW" (Scientific American) is not in the research package --> (about 1,775 MW) by Jul 15, 2026, per the inventory in MDEQ's Agreed Order. Use the date slider under "The xAI record" for every snapshot
+              ${prov({ status: "regulator_stated", tier: "official", as_of: "2026-07-30", source_read: "full", source_name: "MDEQ Agreed Order", source_url: "https://opcgis.deq.state.ms.us/ensearchonline/get_doc.aspx?dt=order&id=1862315" })}</dd>
+            <dt>State view</dt><dd>MDEQ's Jul 29, 2025 letter treated trailer-mounted turbines on site 12 months or less as "mobile sources" needing no air permit. In the Agreed Order, MDEQ and MZX Tech agree the operation has not violated Mississippi permitting requirements. The federal court has held, at the dismissal stage, that the turbines are not mobile sources; that question is not settled</dd>
+            <dt>Permanent</dt><dd>41 turbines, about 1.2 GW, approved by the Mississippi Permit Board Mar 10, 2026 (issued Mar 11) with a NOx cap of 423 t/yr; SELC appealed Apr 9, 2026
+              ${prov({ status: "permitted", tier: "secondary", as_of: "2026-03-10", source_read: "full", source_name: "Mississippi Free Press", source_url: "https://www.mississippifreepress.org/mississippi-permit-board-grants-xais-request-for-41-southaven-gas-turbines-to-power-memphis-data-center/" })}</dd>
+            <dt>Phase-out</dt><dd>Mobile units retire Aug 18, 2026 – Jul 14, 2027 under the Agreed Order; 13 of the 14 SMT-130 units may run to Dec 31, 2026<!-- SOURCE NEEDED: "11 shut down Aug 31, 2026" is not in the research package -->; 11 shut down Aug 31, 2026</dd>
+            <dt>Lawsuits</dt><dd>NAACP v. X.AI Corp. (N.D. Miss., 3:26-cv-00074), filed Apr 14, 2026. The court denied DOJ's motion to dismiss on Oct 19 and xAI's on Oct 30, 2026. No finding of liability; an injunction ruling is pending. A noise class action, Haley v. X.AI (3:26-cv-00148), was filed Jun 8, 2026
+              ${prov({ status: "filed_allegation", tier: "official", as_of: "2026-10-30", source_name: "Complaint", source_read: "full", source_url: "https://storage.courtlistener.com/recap/gov.uscourts.msnd.52261/gov.uscourts.msnd.52261.1.0.pdf" })}</dd>
+            <dt>Authority</dt><dd>MDEQ and the Mississippi Permit Board (air permits); federal court and EPA (Clean Air Act); DOJ intervened. MLGW and TDEC told reporters they have no authority over xAI's facility (reported; confirm)</dd>
+            <dt>Nearby homes</dt><dd>MZX Tech reportedly bought three homes in the Colonial Hills area in Oct 2026. Shown at neighborhood scale only</dd>
           </dl>
           <p class="coords">34.9820° N, 90.0407° W · behind the meter, so not in EIA's plant data</p>
           ${XAI_SOURCES}
@@ -1231,6 +1358,7 @@
           <dl>
             <dt>Power</dt><dd>Mostly from xAI's own gas turbines in Southaven, MS, about 1.2 mi south. MLGW said in Jul 2025 it was not supplying power to the site</dd>
             <dt>Colossus 1</dt><dd>About 8 mi northwest on Paul R. Lowry Rd</dd>
+            <dt>Authority</dt><dd>City of Memphis and Shelby County; the power comes from Mississippi, where MDEQ regulates the turbines</dd>
           </dl>
           <p class="coords">34.9980° N, 90.0349° W</p>
           ${XAI_SOURCES}
@@ -1288,7 +1416,7 @@
       p.share < 0.95 && `About ${Math.round(p.share * 100)}% of the county is in the TVA area`,
       "ACS 2020–2024 5-year estimates"
     ].filter(Boolean).map(r => `<span>${r}</span>`).join("");
-    return `<div class="state-pop"><strong>${esc(p.name)}</strong>${rows}</div>`;
+    return `<div class="state-pop"><strong>${esc(p.name)}</strong>${rows}${prov(DATASET.counties)}</div>`;
   }
   function applyCounties() {
     statesLayer?.eachLayer(l => l.setStyle(stateStyle(l.feature.properties.name, false)));
@@ -1338,15 +1466,22 @@
     o3: { std: 70, text: v => String(v) }
   };
   const airStatus = (kind, v) => (v > AIR[kind].std ? "over" : v >= 0.9 * AIR[kind].std ? "near" : "ok");
-  function airPopup(p) {
+  // Monitors near Memphis and Southaven also say how far they sit from each turbine site.
+  const TURBINE_SITES = [["Colossus 1 turbines", 35.05991, -90.15632], ["Southaven turbines", 34.98203, -90.04071]];
+  function turbineDistances(ll) {
+    return TURBINE_SITES.map(([n, lat, lng]) => [n, ll.distanceTo([lat, lng]) / 1609.344])
+      .filter(([, mi]) => mi < 40).map(([n, mi]) => `${mi.toFixed(1)} mi from ${n}`).join(" · ");
+  }
+  function airPopup(p, ll) {
     const rows = [
       p.pm != null && `PM2.5 annual mean: ${p.pm.toFixed(1)} µg/m³ (standard 9.0)`,
       p.o3 != null && `Ozone, 4th-highest 8-hour: ${p.o3} ppb (standard 70)`,
       esc(p.county),
+      turbineDistances(ll),
       "2025 only; official compliance uses 3-year averages",
       `EPA site ${esc(p.id)}`
     ].filter(Boolean).map(r => `<span>${r}</span>`).join("");
-    return `<div class="state-pop"><strong>${esc(p.name)}</strong>${rows}</div>`;
+    return `<div class="state-pop"><strong>${esc(p.name)}</strong>${rows}${prov(DATASET.air)}</div>`;
   }
   function buildAir() {
     if (!airData) return;
@@ -1355,12 +1490,12 @@
     airData.features.forEach(f => {
       const p = f.properties, v = p[kind];
       if (v == null) return;
-      const st = airStatus(kind, v);
-      L.marker([f.geometry.coordinates[1], f.geometry.coordinates[0]], {
+      const st = airStatus(kind, v), ll = L.latLng(f.geometry.coordinates[1], f.geometry.coordinates[0]);
+      L.marker(ll, {
         icon: L.divIcon({ className: "aq-icon", html: `<span class="aq aq--${st}">${st === "over" ? "▲ " : ""}${AIR[kind].text(v)}</span>`, iconSize: null }),
         title: "", alt: p.name, zIndexOffset: 200
       })
-        .bindPopup(airPopup(p), { autoPanPaddingTopLeft: panelPadding() })
+        .bindPopup(airPopup(p, ll), { autoPanPaddingTopLeft: panelPadding() })
         .addTo(airLayer);
     });
   }
@@ -1380,7 +1515,7 @@
     "https://tiles.arcgis.com/tiles/xOi1kZaI0eWDREZv/arcgis/rest/services/NTAD_Noise_2022_CONUS_aviation_rail_road/MapServer/tile/{z}/{y}/{x}",
     {
       maxNativeZoom: 12, maxZoom: 16, opacity: 0.65, zIndex: 2,
-      attribution: 'Noise: <a href="https://www.bts.gov/geospatial/national-transportation-noise-map">U.S. DOT BTS National Transportation Noise Map</a> 2022, not for evaluating individual locations'
+      attribution: 'Transportation noise only (road, rail, air; no turbines): <a href="https://www.bts.gov/geospatial/national-transportation-noise-map">U.S. DOT BTS National Transportation Noise Map</a> 2022, for trends, not for evaluating individual locations'
     }
   );
   noiseToggle.addEventListener("change", () => {
@@ -1437,7 +1572,8 @@
       }).addTo(map);
       // A wide transparent copy of the border makes it easy to click.
       L.geoJSON(data, { pane: "tva", style: { className: "tva-hit", fill: false, weight: 14 } })
-        .bindPopup(`<div class="state-pop"><strong>TVA power service area</strong><span>About ${sqmi} sq mi across 7 states. Both supercomputer sites are inside it.</span></div>`,
+        .bindPopup(`<div class="state-pop"><strong>TVA power service area</strong><span>About ${sqmi} sq mi across 7 states. Both supercomputer sites are inside it.</span>` +
+          `<span>Authority: the TVA board must approve any single load over 100 MW.</span>${prov(DATASET.tva)}</div>`,
           { autoPanPaddingTopLeft: panelPadding() })
         .on("mouseover", () => line.getLayers()[0].getElement().classList.add("is-hover"))
         .on("mouseout", () => line.getLayers()[0].getElement().classList.remove("is-hover"))
@@ -1610,9 +1746,12 @@
   try { records = JSON.parse(localStorage.getItem(REC_KEY) || "[]"); } catch (e) { records = []; }
   const saveRecords = () => { try { localStorage.setItem(REC_KEY, JSON.stringify(records)); } catch (e) { /* storage blocked: records last for this visit */ } };
   const recIcon = r => L.divIcon({ className: "rec-icon", html: `<span>${r.type === "testimony" || r.type === "memory" ? "❝" : "＋"}</span>`, iconSize: [20, 20], iconAnchor: [10, 10] });
-  const recPopup = r => `<div class="rec-pop"><p class="t-kicker">${esc(REC_TYPES[r.type] || "Record")}${r.year ? " · " + esc(r.year) : ""} · reader record</p>
+  // How the person knows: this sets the record's status when exported (seen or measured = observed; otherwise reported).
+  const REC_HOW = { seen: "I saw or heard it myself", measured: "I measured it with a device", document: "From a document or news report", account: "Family or community account" };
+  const recPopup = r => `<div class="rec-pop"><p class="t-kicker">${esc(REC_TYPES[r.type] || "Record")}${r.year ? " · " + esc(r.year) : ""} · private note, this browser only</p>
       <blockquote><b>${esc(r.title)}</b>${r.text ? "<br>" + esc(r.text) : ""}</blockquote>
-      <p>${r.name ? esc(r.name) + " · " : ""}added ${esc(r.added.slice(0, 10))}</p>
+      ${r.how ? `<p>${esc(REC_HOW[r.how] || r.how)}${r.device ? " · " + esc(r.device) : ""}</p>` : ""}
+      <p>${r.name ? esc(r.name) + (r.shareName ? "" : " (not exported)") + " · " : ""}added ${esc(r.added.slice(0, 10))}</p>
       ${r.link ? `<p><a href="${esc(r.link)}" target="_blank" rel="noopener nofollow">source ↗</a></p>` : ""}
       <button type="button" data-del="${r.id}">Delete this record</button></div>`;
   function renderRecords() {
@@ -1649,14 +1788,18 @@
   }, true);
   function openRecordForm(ll) {
     const form = L.DomUtil.create("form", "rec-form");
-    form.innerHTML = `<b class="rec-form-title">New record</b>
+    form.innerHTML = `<b class="rec-form-title">New private note</b>
       <label>Type<select name="type">${Object.entries(REC_TYPES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select></label>
       <label>Title<input name="title" required maxlength="90" placeholder="What happened here?"></label>
       <label>Account<textarea name="text" maxlength="1200" placeholder="In your words, or a source's"></textarea></label>
       <div class="rec-row"><label>Year<input name="year" inputmode="numeric" maxlength="4" placeholder="1943"></label>
-      <label>Name (optional)<input name="name" maxlength="60"></label></div>
+      <label>Date observed<input name="observed" type="date"></label></div>
+      <label>How do you know?<select name="how">${Object.entries(REC_HOW).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}</select></label>
+      <label>Device and method (if measured)<input name="device" maxlength="120" placeholder="e.g. phone sound app, indoors, 10 min"></label>
       <label>Source link (optional)<input name="link" type="url" maxlength="300" placeholder="https://"></label>
-      <div class="rec-actions"><button type="submit">Save record</button><button type="button" class="ghost" data-cancel>Cancel</button></div>`;
+      <label>Name (optional)<input name="name" maxlength="60"></label>
+      <label class="rec-check"><input type="checkbox" name="shareName">Include my name when I export. Left unticked, exports are anonymous.</label>
+      <div class="rec-actions"><button type="submit">Save note</button><button type="button" class="ghost" data-cancel>Cancel</button></div>`;
     L.DomEvent.disableClickPropagation(form);
     const pop = L.popup({ minWidth: 260, autoPanPaddingTopLeft: panelPadding(), closeOnClick: false }).setLatLng(ll).setContent(form).openOn(map);
     form.querySelector("[name=title]").focus();
@@ -1668,21 +1811,334 @@
       records.push({
         id: Math.random().toString(36).slice(2, 10), lat: +ll.lat.toFixed(5), lng: +ll.lng.toFixed(5),
         type: f.get("type"), title: String(f.get("title")).trim(), text: String(f.get("text") || "").trim(),
-        year: String(f.get("year") || "").trim(), name: String(f.get("name") || "").trim(),
+        year: String(f.get("year") || "").trim(), name: String(f.get("name") || "").trim(), shareName: f.get("shareName") === "on",
+        observed: String(f.get("observed") || ""), how: String(f.get("how") || ""), device: String(f.get("device") || "").trim(),
         link: /^https?:\/\//.test(link) ? link : "", added: new Date().toISOString()
       });
       saveRecords(); map.closePopup(pop); renderRecords();
     });
   }
-  recExport.addEventListener("click", () => {
-    const fc = { type: "FeatureCollection", features: records.map(({ lat, lng, ...p }) => ({ type: "Feature", properties: p, geometry: { type: "Point", coordinates: [lng, lat] } })) };
+  // Exports follow the research package's record schema, so a note keeps its provenance wherever it goes.
+  const exportRow = r => ({
+    id: r.id, layer: "community", type: REC_TYPES[r.type] || r.type, title: r.title, summary: r.text,
+    status: r.how === "seen" || r.how === "measured" ? "observed" : "reported", tier: "self_reported",
+    as_of: r.observed || r.year || r.added.slice(0, 10), verified_on: null, source_url: r.link || "", source_read: null,
+    how_known: REC_HOW[r.how] || "", device_method: r.device || "", submitted_by: r.shareName ? r.name : "",
+    consent: r.shareName && r.name ? "name shared by submitter" : "anonymous", added: r.added,
+    geometry_precision: "point", privacy: "public", lat: r.lat, lng: r.lng
+  });
+  function download(text, type, name) {
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([JSON.stringify(fc, null, 2)], { type: "application/geo+json" }));
-    a.download = "counter-map-records.geojson";
+    a.href = URL.createObjectURL(new Blob([text], { type }));
+    a.download = name;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+  recExport.addEventListener("click", e => {
+    const kind = e.target.closest("[data-export]")?.dataset.export;
+    if (!kind) return;
+    const rows = records.map(exportRow);
+    if (kind === "geojson") {
+      const fc = { type: "FeatureCollection", properties: { note: "Self-reported notes exported from the Counter Map. Not verified; not calibrated measurements." },
+        features: rows.map(({ lat, lng, ...p }) => ({ type: "Feature", properties: p, geometry: { type: "Point", coordinates: [lng, lat] } })) };
+      download(JSON.stringify(fc, null, 2), "application/geo+json", "counter-map-notes.geojson");
+    } else {
+      const cols = Object.keys(exportRow({ added: "", id: "" }));
+      const cell = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+      download([cols.join(","), ...rows.map(r => cols.map(c => cell(r[c])).join(","))].join("\n"), "text/csv", "counter-map-notes.csv");
+    }
   });
   renderRecords();
+
+  // ---------- The xAI record: turbine counts and decisions on a month-by-month slider (Jun 2024 – Jul 2027) ----------
+  // Separate from the grid timeline above, which runs on EIA's annual data and ends in 2025.
+  const XR_SITES = {
+    colossus1: { ll: [35.05991, -90.15632], name: "Colossus 1, Memphis" },
+    southaven: { ll: [34.98203, -90.04071], name: "Southaven turbines" },
+    colossus2: { ll: [34.99798, -90.03487], name: "Colossus 2, Whitehaven" }
+  };
+  const XR_JURIS = { tva: "TVA", ms: "Mississippi", tn: "Tennessee / Shelby County", federal: "Federal (EPA, DOJ, court)" };
+  const XR_MONTHS = [];
+  for (let y = 2024, m = 6; y < 2027 || m <= 7; m === 12 ? (y++, m = 1) : m++) XR_MONTHS.push(`${y}-${String(m).padStart(2, "0")}`);
+  const xr = { i: XR_MONTHS.indexOf("2026-11"), counts: [], milestones: [], events: [], juris: new Set(Object.keys(XR_JURIS)) };
+  const xrRange = document.getElementById("xr-range"), xrDate = document.getElementById("xr-date"), xrReadout = document.getElementById("xr-readout");
+  const xrList = document.getElementById("xr-list");
+  const toggleCounts = document.getElementById("toggle-counts"), toggleDecisions = document.getElementById("toggle-decisions");
+  xrRange.max = XR_MONTHS.length - 1;
+  xrRange.value = xr.i;
+  const xrEnd = () => `${XR_MONTHS[xr.i]}-31`;
+  const dateKey = d => (d.length === 4 ? `${d}-12-31` : d.length === 7 ? `${d}-28` : d);
+  const xrLabel = () => { const [y, m] = XR_MONTHS[xr.i].split("-"); return `${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][+m - 1]} ${y}`; };
+  const countsLayer = L.layerGroup().addTo(map), decisionsLayer = L.layerGroup().addTo(map);
+  const countRow = c => `<li><b>${c.count}</b> · ${esc(c.label)}${prov({ ...c, as_of: c.date })}</li>`;
+  // Latest count of each kind at a site, as of the slider date. Inventory = units added by a snapshot date.
+  function countsAt(site) {
+    const upto = xr.counts.filter(c => c.site === site && dateKey(c.date) <= xrEnd());
+    const last = kind => upto.filter(c => c.kind === kind).at(-1);
+    return { upto, inventory: last("inventory"), permit: last("permit"), report: last("report") };
+  }
+  function renderCounts() {
+    countsLayer.clearLayers();
+    if (!toggleCounts.checked) return;
+    ["colossus1", "southaven"].forEach(site => {
+      const { upto, inventory, report } = countsAt(site);
+      // Southaven: the regulator's inventory leads. Colossus 1 has no inventory, so its latest record (the permit, from Jul 2025) leads.
+      const head = site === "southaven" ? inventory || report : upto.at(-1);
+      if (!head) return;
+      const alleged = head.status === "alleged";
+      const label = `${head.count}${alleged ? "*" : ""}`;
+      const html = `<div class="pop pop--colossus"><h2>${XR_SITES[site].name}: turbine counts to ${xrLabel()}</h2>
+        <p class="sub">${site === "southaven" ? "Inventory = mobile units added by each snapshot date in MDEQ's Agreed Order (Appendix A). Press figures fall between snapshots." : "Counts at Colossus 1 come from the complaint (alleged) and SELC's aerial photos; the permit is for 15."}</p>
+        <ol class="xr-list">${upto.slice().reverse().map(countRow).join("")}</ol>
+        ${site === "southaven" ? `<p class="sub">${xr.milestones.map(m => `${esc(fmtDate(m.date))}: ${esc(m.label)}`).join(" · ")}</p>` : ""}</div>`;
+      L.marker(XR_SITES[site].ll, {
+        icon: L.divIcon({ className: "count-icon", html: `<span class="${alleged ? "alleged" : ""}">${label}</span>`, iconSize: null, iconAnchor: [-14, 26] }),
+        title: `${head.count} turbines`, zIndexOffset: 900
+      }).bindPopup(html, { maxWidth: 360, minWidth: 280, autoPanPaddingTopLeft: panelPadding() }).addTo(countsLayer);
+    });
+  }
+  function renderReadout() {
+    const s = countsAt("southaven"), c = countsAt("colossus1");
+    const line = (name, r) => r ? `${name}: <b>${r.count}</b> <span>${esc(STATUS_LABEL[r.status])} · ${esc(fmtDate(r.date))}</span>` : "";
+    const next = xr.milestones.find(m => m.date > xrEnd());
+    xrReadout.innerHTML = [
+      line("Southaven mobile turbines (inventory)", s.inventory),
+      xrEnd() >= "2026-08-18" && s.inventory && "<span>Units added to date. Retirements began Aug 18, 2026; how many are still running is not yet transcribed from the order.</span>",
+      s.permit && line("Southaven permanent turbines permitted", s.permit),
+      c.upto.length && line(c.upto.at(-1).kind === "permit" ? "Colossus 1 turbines permitted" : "Colossus 1 turbines on site", c.upto.at(-1)),
+      next && `<span>Next: ${esc(fmtDate(next.date))}, ${esc(next.label)}</span>`
+    ].filter(Boolean).join("<br>") || "<span>No turbines on record yet at this date.</span>";
+  }
+  const eventsShown = () => xr.events.filter(e => xr.juris.has(e.jurisdiction) && dateKey(e.date) <= xrEnd());
+  const eventHtml = e => `<li data-ev="${e.id}"><time>${esc(fmtDate(e.date))} · ${esc(XR_JURIS[e.jurisdiction])} · ${esc(e.type)}</time>
+    <span class="xr-what"><b>${esc(e.actor)}</b>: ${esc(e.title)}</span>${prov(e)}</li>`;
+  function renderDecisions() {
+    decisionsLayer.clearLayers();
+    const shown = toggleDecisions.checked ? eventsShown() : [];
+    xrList.innerHTML = shown.slice().reverse().map(eventHtml).join("") || (toggleDecisions.checked ? "<li>No decisions on record by this date for the selected jurisdictions.</li>" : "");
+    Object.entries(XR_SITES).forEach(([site, s]) => {
+      const evs = shown.filter(e => e.site === site);
+      if (!evs.length) return;
+      L.marker(s.ll, {
+        icon: L.divIcon({ className: "dec-icon", html: `<span>${evs.length}</span>`, iconSize: [20, 20], iconAnchor: [30, 10] }),
+        title: `${evs.length} decisions`, zIndexOffset: 850
+      }).bindPopup(`<div class="pop pop--colossus"><h2>${esc(s.name)}: decisions to ${xrLabel()}</h2>
+          <p class="sub">Votes, permits, filings and rulings about this site. Filings are allegations, not findings.</p>
+          <ol class="xr-list">${evs.slice().reverse().map(eventHtml).join("")}</ol></div>`,
+        { maxWidth: 380, minWidth: 280, maxHeight: 360, autoPanPaddingTopLeft: panelPadding() })
+        .addTo(decisionsLayer);
+      decisionsLayer.getLayers().at(-1).site = site;
+    });
+  }
+  xrList.addEventListener("click", e => {
+    const ev = xr.events.find(x => x.id === e.target.closest("[data-ev]")?.dataset.ev);
+    if (!ev || e.target.closest("a") || !ev.site) return;
+    const m = decisionsLayer.getLayers().find(l => l.site === ev.site);
+    autoFit = false;
+    map.flyTo(XR_SITES[ev.site].ll, Math.max(map.getZoom(), 12), { duration: 1.2 });
+    map.once("moveend", () => m?.openPopup());
+  });
+  document.getElementById("xr-juris").innerHTML = Object.entries(XR_JURIS)
+    .map(([k, v]) => `<li><label><input type="checkbox" data-juris="${k}" checked>${v}</label></li>`).join("");
+  document.getElementById("xr-juris").addEventListener("change", e => {
+    const k = e.target.dataset.juris;
+    e.target.checked ? xr.juris.add(k) : xr.juris.delete(k);
+    renderDecisions();
+  });
+  function renderXr() {
+    xrDate.textContent = xrLabel();
+    renderCounts();
+    renderReadout();
+    renderDecisions();
+  }
+  xrRange.addEventListener("input", () => { xr.i = +xrRange.value; renderXr(); });
+  toggleCounts.addEventListener("change", renderCounts);
+  toggleDecisions.addEventListener("change", () => {
+    document.getElementById("xr-juris").hidden = !toggleDecisions.checked;
+    renderDecisions();
+  });
+  Promise.all([fetch(dataUrl("data/turbines.json")).then(r => r.json()), fetch(dataUrl("data/decisions.json")).then(r => r.json())])
+    .then(([t, d]) => {
+      xr.counts = t.counts.slice().sort((a, b) => dateKey(a.date).localeCompare(dateKey(b.date)));
+      xr.milestones = t.properties.milestones;
+      xr.events = d.events.slice().sort((a, b) => dateKey(a.date).localeCompare(dateKey(b.date)));
+      renderXr();
+    })
+    .catch(err => console.warn("xAI record unavailable:", err));
+  renderXr();
+
+  // Colossus 3: planned site described in the NAACP complaint (alleged), geocoded from its address.
+  const c3Toggle = document.getElementById("toggle-c3");
+  let c3Layer = null;
+  c3Toggle.addEventListener("change", () => {
+    if (!c3Toggle.checked) return c3Layer && map.removeLayer(c3Layer);
+    if (c3Layer) return c3Layer.addTo(map);
+    fetch(dataUrl("data/sites.json")).then(r => r.json()).then(sites => {
+      const s = sites.find(x => x.site_id === "colossus3");
+      if (!s?.lat) throw new Error("no coordinates");
+      c3Layer = L.marker([s.lat, s.lng], { icon: L.divIcon({ className: "c3-icon", html: "<span></span>", iconSize: [14, 14] }), title: "Colossus 3 (planned)" })
+        .bindTooltip("Colossus 3 (planned)", { permanent: true, direction: "right", offset: [10, 0], className: "xai-label" })
+        .bindPopup(`<div class="pop pop--colossus"><h2>Colossus 3 (planned)</h2><p class="sub">xAI affiliate · 2400 Stateline Rd W, Southaven, MS</p>
+          <dl><dt>Site</dt><dd>Described in the NAACP complaint as about 0.8 mi from the turbine plant</dd>
+          <dt>Location</dt><dd>Geocoded from the street address (${esc(s.method || "Census geocoder")}); verify against county records</dd></dl>
+          ${prov({ status: "alleged", tier: "official", as_of: "2026-04-14", source_read: "full", source_name: "NAACP complaint", source_url: "https://storage.courtlistener.com/recap/gov.uscourts.msnd.52261/gov.uscourts.msnd.52261.1.0.pdf" })}</div>`,
+          { maxWidth: 320, autoPanPaddingTopLeft: panelPadding() })
+        .addTo(map);
+    }).catch(err => { console.warn("Colossus 3 unavailable:", err); c3Toggle.checked = false; c3Toggle.disabled = true; });
+  });
+
+  // ---------- Who has authority: city and county lines around the xAI sites ----------
+  const AUTHORITY = {
+    "Shelby County": "Shelby County Health Department issues air permits here (Colossus 1); appeals go to the Memphis and Shelby County Air Pollution Control Board.",
+    "Memphis": "MLGW is the city utility. MLGW and TDEC told reporters they have no authority over xAI's facility (reported, excerpt-level; confirm). Power above 100 MW needs a TVA board vote.",
+    "DeSoto County": "MDEQ and the Mississippi Permit Board issue air permits here (Southaven turbines). Clean Air Act claims are in the U.S. District Court for the Northern District of Mississippi.",
+    "Southaven": "Home purchases by MZX Tech were reported in the Colonial Hills area in Oct 2026. Recorded deeds are with the DeSoto County Chancery Clerk."
+  };
+  const jurisToggle = document.getElementById("toggle-juris");
+  let jurisLayer = null;
+  jurisToggle.addEventListener("change", () => {
+    if (!jurisToggle.checked) return jurisLayer && map.removeLayer(jurisLayer);
+    if (jurisLayer) return jurisLayer.addTo(map);
+    fetch(dataUrl("data/places.geojson")).then(r => r.json()).then(data => {
+      jurisLayer = L.geoJSON(data, {
+        style: f => ({ color: palette["--text"], weight: f.properties.kind === "county" ? 2 : 1.2, dashArray: f.properties.kind === "county" ? "6 4" : "2 3", fill: true, fillOpacity: 0, opacity: 0.8 }),
+        attribution: "Boundaries: U.S. Census Bureau TIGERweb",
+        onEachFeature: (f, layer) => {
+          const p = f.properties, key = Object.keys(AUTHORITY).find(k => String(p.name).startsWith(k));
+          layer.bindPopup(`<div class="state-pop"><strong>${esc(p.name)}, ${esc(p.state)}</strong><span>${p.kind === "county" ? "County" : "City"}</span>` +
+            `<span>${esc(AUTHORITY[key] || "")}</span>${prov({ tier: "official", source_name: "TIGERweb", source_url: "https://tigerweb.geo.census.gov/" })}</div>`,
+            { autoPanPaddingTopLeft: panelPadding() });
+        }
+      }).addTo(map);
+    }).catch(err => { console.warn("Boundaries unavailable:", err); jurisToggle.checked = false; });
+  });
+
+  // ---------- Block groups near the xAI sites: ACS 2020–2024, with margins of error ----------
+  const bgSelect = document.getElementById("bg-var"), bgLegend = document.getElementById("bg-legend"), bgNote = document.getElementById("bg-note");
+  let bgData = null, bgLayer = null, bgBreaks = [];
+  const BG_VARS = {
+    black_pct: { short: v => `${Math.round(v)}%` },
+    inc: { short: v => `$${Math.round(v / 1000)}k` },
+    pov_pct: { short: v => `${Math.round(v)}%` }
+  };
+  const pm = v => (v != null ? ` ± ${Math.round(v).toLocaleString("en-US")}` : "");
+  function bgPopup(p) {
+    const rows = [
+      p.county,
+      p.pop != null && `Population: ${p.pop.toLocaleString("en-US")}${pm(p.pop_moe)}`,
+      p.black != null && `Black residents (non-Hispanic): ${p.black.toLocaleString("en-US")}${pm(p.black_moe)}${p.black_pct != null ? ` (${p.black_pct}%)` : ""}`,
+      p.inc != null ? `Median household income: $${p.inc.toLocaleString("en-US")}${pm(p.inc_moe)}` : "Median household income: not published for this block group",
+      p.pov_pct != null && `Below poverty: ${p.pov_n.toLocaleString("en-US")}${pm(p.pov_moe)} of ${p.pov_univ.toLocaleString("en-US")} (${p.pov_pct}%)`,
+      "ACS 2020–2024 5-year estimates; ± is the 90% margin of error"
+    ].filter(Boolean).map(r => `<span>${esc(r)}</span>`).join("");
+    return `<div class="state-pop"><strong>Block group ${esc(p.geoid)}</strong>${rows}${prov({ ...DATASET.counties, source_name: "ACS 2020–2024, block groups" })}</div>`;
+  }
+  function applyBg() {
+    const v = bgSelect.value;
+    bgNote.hidden = bgLegend.hidden = !v;
+    if (!v || !bgData) return bgLayer && map.removeLayer(bgLayer);
+    const vals = bgData.features.map(f => f.properties[v]).filter(x => x != null).sort((a, b) => a - b);
+    bgBreaks = [0.2, 0.4, 0.6, 0.8].map(q => vals[Math.floor(q * vals.length)]);
+    const cls = x => { let i = 0; while (i < bgBreaks.length && x >= bgBreaks[i]) i++; return i; };
+    const style = f => {
+      const x = f.properties[v];
+      return { color: palette["--surface-solid"], weight: 0.5, opacity: 1, fillColor: x == null ? palette["--muted"] : palette[SEQ[cls(x)]], fillOpacity: x == null ? 0.15 : 0.75 };
+    };
+    if (!bgLayer) {
+      bgLayer = L.geoJSON(bgData, { renderer: canvas, attribution: "Block groups: U.S. Census Bureau ACS 2020–2024",
+        onEachFeature: (f, layer) => layer.on("click", e => L.popup({ autoPanPaddingTopLeft: panelPadding() }).setLatLng(e.latlng).setContent(bgPopup(f.properties)).openOn(map)) });
+    }
+    bgLayer.setStyle(style);
+    if (!map.hasLayer(bgLayer)) bgLayer.addTo(map);
+    restack();
+    bgLegend.innerHTML = SEQ.map(k => `<span style="background:${palette[k]}"></span>`).join("") +
+      [vals[0], ...bgBreaks].map(x => `<em>${BG_VARS[v].short(x)}+</em>`).join("");
+  }
+  // The block-group file is built separately (needs Census API access); until it exists the selector stays hidden.
+  fetch(dataUrl("data/blockgroups.geojson"), { method: "HEAD" })
+    .then(r => { if (!r.ok) throw new Error(r.status); })
+    .catch(() => { bgSelect.closest(".field").hidden = true; });
+  bgSelect.addEventListener("change", () => {
+    if (bgData) return applyBg();
+    fetch(dataUrl("data/blockgroups.geojson")).then(r => r.json()).then(d => { bgData = d; applyBg(); })
+      .catch(err => { console.warn("Block groups unavailable:", err); bgSelect.value = ""; });
+  });
+
+  // ---------- Coal ash: TVA Kingston (2008 spill) and Allen (Memphis) ----------
+  const ASH = [
+    { match: /^Kingston/, title: "Kingston coal-ash spill", text: "Dec 22, 2008: a dike failed at TVA's Kingston Fossil Plant and released about 5.4 million cubic yards of coal ash over about 300 acres and into the Emory River. EPA oversaw TVA's cleanup under a May 11, 2009 order.",
+      p: { status: "documented", tier: "official", as_of: "2008-12-22", source_read: "full", source_name: "EPA Kingston", source_url: "https://www.epa.gov/node/133797" } },
+    { match: /^Allen/, title: "Allen coal-ash ponds, Memphis", text: "Routine monitoring in 2017 found arsenic in the shallow aquifer under the closed coal plant. A 2018 USGS and University of Memphis study found that aquifer connected to the Memphis Sand; TVA says the Memphis Sand is not affected, so the extent is disputed. In Oct 2020 TVA proposed trucking about 3.5 million cubic yards of ash to landfills in Memphis and Tunica County, MS.",
+      p: { status: "documented", tier: "secondary", as_of: "2021-01-26", source_read: "full", source_name: "Mississippi Free Press", source_url: "https://www.mississippifreepress.org/from-memphis-to-tunica-concerns-about-tvas-coal-ash-contamination-remediation-plans/" } }
+  ];
+  const ashToggle = document.getElementById("toggle-ash");
+  const ashLayer = L.layerGroup();
+  ashToggle.addEventListener("change", () => {
+    if (!ashToggle.checked) return map.removeLayer(ashLayer);
+    ashLayer.clearLayers();
+    ASH.forEach(a => {
+      const pl = plants.find(x => a.match.test(x.p.n));
+      if (!pl) return;
+      L.marker(pl.marker.getLatLng(), { icon: L.divIcon({ className: "ash-icon", html: "<span></span>", iconSize: [12, 12], iconAnchor: [-8, -8] }), title: a.title, zIndexOffset: 700 })
+        .bindPopup(`<div class="state-pop"><strong>${a.title}</strong><span>${a.text}</span>${prov(a.p)}</div>`, { maxWidth: 320, autoPanPaddingTopLeft: panelPadding() })
+        .addTo(ashLayer);
+    });
+    ashLayer.addTo(map);
+  });
+
+  // ---------- Oak Ridge Reservation Superfund (NPL) boundary, EPA ----------
+  const nplToggle = document.getElementById("toggle-npl");
+  let nplLayer = null;
+  nplToggle.addEventListener("change", () => {
+    if (!nplToggle.checked) return nplLayer && map.removeLayer(nplLayer);
+    if (nplLayer) return nplLayer.addTo(map);
+    fetch(dataUrl("data/oak-ridge-npl.geojson")).then(r => r.json()).then(data => {
+      nplLayer = L.geoJSON(data, {
+        style: { color: palette["--text"], weight: 1.5, dashArray: "4 3", fillColor: palette["--text"], fillOpacity: 0.06 },
+        pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 7, color: palette["--text"], weight: 1.5, fillOpacity: 0.1 }),
+        attribution: "Superfund boundary: U.S. EPA",
+        onEachFeature: (f, layer) => layer.bindPopup(`<div class="state-pop"><strong>Oak Ridge Reservation (USDOE), Superfund site</strong>` +
+          `<span>Placed on the National Priorities List Dec 21, 1989, under a Federal Facility Agreement effective Jan 1, 1992. In Dec 2025 DOE and EPA said 16,377 of 33,069 acres need no cleanup.</span>` +
+          `${prov({ status: "documented", tier: "official", as_of: "1989-12-21", source_read: "excerpt", source_name: "EPA", source_url: f.properties.source_url || "https://www.epa.gov/newsreleases/epa-southeast-leaders-visited-oak-ridge-reservation-npl-site-and-signed-record" })}</div>`,
+          { maxWidth: 320, autoPanPaddingTopLeft: panelPadding() })
+      }).addTo(map);
+    }).catch(err => { console.warn("Superfund boundary unavailable:", err); nplToggle.checked = false; });
+  });
+
+  // ---------- USGS Memphis-aquifer monitoring wells ----------
+  const wellsToggle = document.getElementById("toggle-wells");
+  let wellsLayer = null;
+  wellsToggle.addEventListener("change", () => {
+    if (!wellsToggle.checked) return wellsLayer && map.removeLayer(wellsLayer);
+    if (wellsLayer) return wellsLayer.addTo(map);
+    fetch(dataUrl("data/usgs-wells.geojson")).then(r => r.json()).then(data => {
+      wellsLayer = L.geoJSON(data, {
+        attribution: "Wells: USGS National Water Information System",
+        pointToLayer: (f, ll) => L.marker(ll, { icon: L.divIcon({ className: "well-icon", html: "<span></span>", iconSize: [9, 9] }), title: f.properties.name }),
+        onEachFeature: (f, layer) => {
+          const p = f.properties;
+          layer.bindPopup(() => `<div class="state-pop"><strong>${esc(p.name)}</strong>` + [
+            `USGS well ${esc(p.site_no)} · ${esc(p.county || "")}`,
+            p.aquifer && `Aquifer: ${esc(p.aquifer)}`,
+            p.well_depth_ft && `Depth: ${p.well_depth_ft} ft`,
+            p.last_level_date && `Last water level: ${esc(fmtDate(p.last_level_date))}`,
+            turbineDistances(layer.getLatLng()),
+            "Water levels only; no well shows what any one user withdraws"
+          ].filter(Boolean).map(r => `<span>${r}</span>`).join("") +
+            prov({ tier: "official", source_name: "USGS", source_url: p.url }) + "</div>", { autoPanPaddingTopLeft: panelPadding() });
+        }
+      }).addTo(map);
+    }).catch(err => { console.warn("USGS wells unavailable:", err); wellsToggle.checked = false; });
+  });
+
+  // ---------- About this data: every source, from the research package's source table ----------
+  fetch(dataUrl("data/sources.json")).then(r => r.json()).then(d => {
+    document.getElementById("about-list").innerHTML = d.sources.map(s => `<li><span class="ab-id">${esc(s.id)} · ${esc(s.layer)} · ${esc(s.tier)} · on the map: ${esc(s.on_map)}</span>
+      <b>${esc(s.dataset)}</b><span>${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.publisher)} ↗</a>` : esc(s.publisher)}</span>
+      ${s.map_note ? `<span>${esc(s.map_note)}</span>` : ""}${s.issue ? `<span>Caveat: ${esc(s.issue)}</span>` : ""}</li>`).join("");
+  }).catch(err => console.warn("Source list unavailable:", err));
+  if (phone.matches) document.querySelectorAll("#xai-record, #about-data").forEach(d => { d.open = false; });
+
   function syncPopupPadding() {
     const p = panelPadding();
     Object.values(markers).forEach(m => { m.getPopup().options.autoPanPaddingTopLeft = p; });

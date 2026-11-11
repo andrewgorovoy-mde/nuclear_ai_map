@@ -98,10 +98,14 @@ function glowPath(g, pts, width, rgb, a) {
 }
 const kmToPx = (map, lat, km) => km * 1000 / (40075016 * Math.cos(lat * Math.PI / 180) / (256 * 2 ** map.getZoom()));
 
-// Turbine counts on site (sources: NAACP complaint, TechCrunch, Mississippi Today, SciAm).
+// Turbine counts on site. Southaven: units added by each snapshot in the inventory (Appendix A) of MDEQ's
+// Agreed Order with MZX Tech, Jul 30, 2026. Colossus 1: NAACP complaint (alleged, 16 and 35), Shelby County permit (15).
+// Mirrors data/turbines.json; see that file for status and links.
+// SOURCE NEEDED: Colossus 1's 26 (mid-2025), Southaven's 3 (early Aug 2025) and 58 (after the Aug 31, 2026 shutdowns)
+// are not in the Nov 2026 research package.
 const TURBINES = {
-  LOWRY: [[2024.6, 16], [2025.2, 35], [2025.45, 26], [2025.5, 15]],
-  SOUTHAVEN: [[2025.58, 3], [2025.7, 18], [2025.96, 27], [2026.36, 46], [2026.45, 57], [2026.46, 60], [2026.54, 69], [2026.66, 58]]
+  LOWRY: [[2024.6, 16], [2025.25, 35], [2025.45, 26], [2025.5, 15]],
+  SOUTHAVEN: [[2025.58, 3], [2025.66, 18], [2026.01, 27], [2026.33, 51], [2026.35, 58], [2026.45, 60], [2026.54, 69], [2026.66, 58]]
 };
 
 // Step function over dated values: [[year, value], ...] → value in force at `year`.
@@ -376,7 +380,7 @@ export const LAYERS = {
         state.year >= 2025.5 ? group.addLayer(c2) : group.removeLayer(c2);
         if (counter.south) {
           group.addLayer(yard);
-          yard.getElement()?.querySelector("em")?.replaceChildren(`${counter.south} turbines · ≈${Math.round(counter.south * 25.7)} MW`);
+          yard.getElement()?.querySelector("em")?.replaceChildren(`${counter.south} turbines · ≈${Math.round(counter.south * 25.7)} MW est.`);
         } else group.removeLayer(yard);
         state.year >= 2025 && !quiet ? group.addLayer(monitor) : group.removeLayer(monitor);
       },
@@ -508,7 +512,7 @@ export const LAYERS = {
         }
         layer = L.tileLayer("https://tiles.arcgis.com/tiles/xOi1kZaI0eWDREZv/arcgis/rest/services/NTAD_Noise_2022_CONUS_aviation_rail_road/MapServer/tile/{z}/{y}/{x}", {
           pane: "noise", maxNativeZoom: 12, maxZoom: 17, opacity: 0.4, className: "noise-tiles",
-          attribution: "Noise: U.S. DOT BTS National Transportation Noise Map 2022"
+          attribution: "Transportation noise only (road, rail, air; no turbines): U.S. DOT BTS National Transportation Noise Map 2022"
         }).addTo(ctx.map);
       },
       update() {},

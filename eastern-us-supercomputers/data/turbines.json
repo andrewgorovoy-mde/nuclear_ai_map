@@ -1,0 +1,190 @@
+{
+ "properties": {
+  "source": "MDEQ Agreed Order, MZX Tech LLC, Jul 30, 2026 (Appendix A); NAACP v. X.AI complaint; SELC; news reports. Counter Map research package, Nov 3, 2026.",
+  "note": "Southaven inventory counts are units added by each snapshot date. Press figures (46, 59) fall between snapshots and are shown as dated reports. Retirement by unit (Aug 18, 2026 – Jul 14, 2027) is in Appendix A but not yet transcribed.",
+  "milestones": [
+   {
+    "date": "2026-08-18",
+    "label": "First scheduled retirement of a mobile unit (Agreed Order)"
+   },
+   {
+    "date": "2026-12-31",
+    "label": "13 of the 14 SMT-130 units may run until this date"
+   },
+   {
+    "date": "2027-07-14",
+    "label": "Last scheduled retirement"
+   }
+  ]
+ },
+ "counts": [
+  {
+   "site": "colossus1",
+   "date": "2024-08",
+   "count": 16,
+   "kind": "report",
+   "status": "alleged",
+   "label": "16 turbines (about 105 MW) on site as of Aug 2024, per the NAACP complaint (¶196–198)",
+   "source_url": "https://storage.courtlistener.com/recap/gov.uscourts.msnd.52261/gov.uscourts.msnd.52261.1.0.pdf",
+   "source_read": "full",
+   "tier": "official",
+   "verified_on": null
+  },
+  {
+   "site": "colossus1",
+   "date": "2025-03-31",
+   "count": 35,
+   "kind": "report",
+   "status": "alleged",
+   "label": "35 turbines (421.4 MW) by Mar 31, 2025, per the NAACP complaint",
+   "source_url": "https://storage.courtlistener.com/recap/gov.uscourts.msnd.52261/gov.uscourts.msnd.52261.1.0.pdf",
+   "source_read": "full",
+   "tier": "official",
+   "verified_on": null
+  },
+  {
+   "site": "colossus1",
+   "date": "2025-04-09",
+   "count": 35,
+   "kind": "report",
+   "status": "observed",
+   "label": "35 turbines seen in SELC and Southwings aerial photos; more than 30 operating in thermal images Apr 24 (SELC is plaintiffs' counsel)",
+   "source_url": "https://www.selc.org/news/inside-memphis-fight-against-xai/",
+   "source_read": "full",
+   "tier": "secondary",
+   "verified_on": null
+  },
+  {
+   "site": "colossus1",
+   "date": "2025-07-02",
+   "count": 15,
+   "kind": "permit",
+   "status": "permitted",
+   "label": "15 permanent turbines permitted by the Shelby County Health Department",
+   "source_url": "https://www.selc.org/news/inside-memphis-fight-against-xai/",
+   "source_read": "full",
+   "tier": "secondary",
+   "verified_on": null
+  },
+  {
+   "site": "southaven",
+   "date": "2025-08-29",
+   "count": 18,
+   "kind": "inventory",
+   "status": "regulator_stated",
+   "label": "18 mobile units added by Aug 29, 2025 (MDEQ Agreed Order, Appendix A)",
+   "source_url": "https://opcgis.deq.state.ms.us/ensearchonline/get_doc.aspx?dt=order&id=1862315",
+   "source_read": "full",
+   "tier": "official",
+   "verified_on": null
+  },
+  {
+   "site": "southaven",
+   "date": "2025-12",
+   "count": 27,
+   "kind": "report",
+   "status": "alleged",
+   "label": "27 turbines installed and run without an air permit, Aug–Dec 2025 (NAACP complaint)",
+   "source_url": "https://storage.courtlistener.com/recap/gov.uscourts.msnd.52261/gov.uscourts.msnd.52261.1.0.pdf",
+   "source_read": "full",
+   "tier": "official",
+   "verified_on": null
+  },
+  {
+   "site": "southaven",
+   "date": "2026-01-06",
+   "count": 27,
+   "kind": "inventory",
+   "status": "regulator_stated",
+   "label": "27 mobile units added by Jan 6, 2026 (Appendix A); xAI itself said 27 in January",
+   "source_url": "https://opcgis.deq.state.ms.us/ensearchonline/get_doc.aspx?dt=order&id=1862315",
+   "source_read": "full",
+   "tier": "official",
+   "verified_on": null
+  },
+  {
+   "site": "southaven",
+   "date": "2026-03-10",
+   "count": 41,
+   "kind": "permit",
+   "status": "permitted",
+   "label": "Permit Board approved a construction permit for 41 permanent turbines (about 1,200 MW; NOx cap 423.39 t/yr). The order gives Mar 11 for issuance. SELC appealed Apr 9, 2026.",
+   "source_url": "https://www.mississippifreepress.org/mississippi-permit-board-grants-xais-request-for-41-southaven-gas-turbines-to-power-memphis-data-center/",
+   "source_read": "full",
+   "tier": "secondary",
+   "verified_on": null
+  },
+  {
+   "site": "southaven",
+   "date": "2026-05-02",
+   "count": 51,
+   "kind": "inventory",
+   "status": "regulator_stated",
+   "label": "51 mobile units added by May 2, 2026 (Appendix A)",
+   "source_url": "https://opcgis.deq.state.ms.us/ensearchonline/get_doc.aspx?dt=order&id=1862315",
+   "source_read": "full",
+   "tier": "official",
+   "verified_on": null
+  },
+  {
+   "site": "southaven",
+   "date": "2026-05-05",
+   "count": 46,
+   "kind": "report",
+   "status": "regulator_stated",
+   "label": "46 reported by MDEQ in early May (Mississippi Today, Canary Media); falls between inventory snapshots",
+   "source_url": "https://mississippitoday.org/2026/07/31/southaven-xai-turbines-deadline/",
+   "source_read": "full",
+   "tier": "secondary",
+   "verified_on": null
+  },
+  {
+   "site": "southaven",
+   "date": "2026-05-09",
+   "count": 58,
+   "kind": "inventory",
+   "status": "regulator_stated",
+   "label": "58 mobile units added by May 9, 2026 (Appendix A)",
+   "source_url": "https://opcgis.deq.state.ms.us/ensearchonline/get_doc.aspx?dt=order&id=1862315",
+   "source_read": "full",
+   "tier": "official",
+   "verified_on": null
+  },
+  {
+   "site": "southaven",
+   "date": "2026-06-12",
+   "count": 60,
+   "kind": "inventory",
+   "status": "regulator_stated",
+   "label": "60 mobile units added by Jun 12, 2026, MZX Tech's latest inventory (Appendix A)",
+   "source_url": "https://opcgis.deq.state.ms.us/ensearchonline/get_doc.aspx?dt=order&id=1862315",
+   "source_read": "full",
+   "tier": "official",
+   "verified_on": null
+  },
+  {
+   "site": "southaven",
+   "date": "2026-07-14",
+   "count": 59,
+   "kind": "report",
+   "status": "reported",
+   "label": "Reuters: 59 unpermitted turbines (at least 57 at Southaven, 2 at an unidentified site), from consultant emails to MDEQ; the emails are undated",
+   "source_url": "https://www.thestar.com.my/tech/tech-news/2026/07/14/pollution-from-musks-unpermitted-xai-power-project-hits-hardest-in-black-communities",
+   "source_read": "full",
+   "tier": "secondary",
+   "verified_on": null
+  },
+  {
+   "site": "southaven",
+   "date": "2026-07-15",
+   "count": 69,
+   "kind": "inventory",
+   "status": "regulator_stated",
+   "label": "69 mobile units by Jul 15, 2026 (14 SMT-130, 34 TM2500, 21 Mitsubishi FT8); none may be added after this date",
+   "source_url": "https://opcgis.deq.state.ms.us/ensearchonline/get_doc.aspx?dt=order&id=1862315",
+   "source_read": "full",
+   "tier": "official",
+   "verified_on": null
+  }
+ ]
+}

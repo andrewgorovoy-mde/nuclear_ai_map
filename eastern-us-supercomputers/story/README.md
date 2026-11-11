@@ -1,6 +1,6 @@
 # The Counter Map — scrollytelling story
 
-Open `story.html` (served over http, e.g. `python3 -m http.server`).
+Open `index.html` (served over http, e.g. `python3 -m http.server`).
 
 | Change… | Edit |
 |---|---|
@@ -9,7 +9,7 @@ Open `story.html` (served over http, e.g. `python3 -m http.server`).
 | Colors, fonts, spacing, pins, HUD | `story.css` (tokens at the top) |
 | Scroll mechanics, cursor lens, zones canvas | `engine.js` |
 
-Dev helpers: `story.html?chapter=4` jumps to chapter 4; add `&debug` to see chapter, step, progress, year and zoom.
+Dev helpers: `index.html?chapter=4` jumps to chapter 4; add `&debug` to see chapter, step, progress, year and zoom.
 
 Each chapter holds its first/last 14% at its start/end year (`HOLD` in engine.js), so timelines have clear starts and stops.
 Soft zones are illustrative unless a chapter's note says otherwise; approximate geometry is labeled on the map.
