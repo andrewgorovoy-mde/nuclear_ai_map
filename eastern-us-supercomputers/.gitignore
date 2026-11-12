@@ -1,1 +1,4 @@
 .vercel
+tools/.cache/
+tools/.env
+__pycache__/

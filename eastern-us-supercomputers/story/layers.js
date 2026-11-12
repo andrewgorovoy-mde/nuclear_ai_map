@@ -6,7 +6,7 @@
 //    rigid  → Leaflet SVG lines/pins: thin ink, exact geometry, "technical"
 //    soft   → ctx.zones canvas: blurred glows for zones of impact, "ephemeral"
 // =====================================================================================
-import { PLACES } from "./chapters.js?v=2026-10-28l";
+import { PLACES } from "./chapters.js?v=2026-11-11b";
 
 const L = window.L;
 const BLUE = "86, 168, 255";     // soft impact / environment

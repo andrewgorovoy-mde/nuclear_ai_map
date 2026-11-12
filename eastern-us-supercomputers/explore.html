@@ -3,13 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The Counter Map — Explorer</title>
-<meta name="description" content="Interactive map of the eastern U.S. with the Oak Ridge (ORNL) and Colossus (xAI) supercomputers, the TVA power service area, and its transmission lines.">
+<title>The Counter Map — Map tool</title>
+<meta name="description" content="A layer-by-layer map of the TVA service area and xAI's Colossus sites in Memphis and Southaven, with sourced PDF exports for legal and educational use.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%231d4ed8' fill-opacity='.2'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%231d4ed8'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link rel="stylesheet" href="nav.css?v=2026-11-11b">
 <script>
   try { document.documentElement.dataset.theme = localStorage.getItem("theme") || "light"; }
   catch (e) { document.documentElement.dataset.theme = "light"; }
@@ -587,73 +588,246 @@
   .well-icon span { width: 9px; height: 9px; border-radius: 50%; background: var(--g-hydro); }
   .c3-icon span { display: block; width: 14px; height: 14px; border: 2px dashed var(--colossus); border-radius: 50%; }
   .rec-pop button { margin-top: 8px; font-family: var(--mono); font-size: 10px; text-transform: uppercase; background: none; border: 0; border-bottom: 1px solid var(--muted); color: var(--muted); cursor: pointer; padding: 0; }
+
+  /* ---------- map tool: actions, source lines ---------- */
+  .tool-actions { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 0 0 14px; }
+  .btn-primary { padding: 10px 12px; color: var(--bg); background: var(--text); border-color: var(--text); font-weight: 600; }
+  .btn-primary:hover { background: var(--text); opacity: 0.88; }
+  :root[data-theme="light"] .tool-actions .btn { padding: 9px 12px; text-align: center; border: 1px solid var(--text); }
+  :root[data-theme="light"] .tool-actions .btn-primary { color: var(--bg); background: var(--text); }
+  :root[data-theme="light"] .tool-actions .btn-primary:hover { color: var(--bg); opacity: 0.85; }
+  .src { margin: 6px 0 0 24px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.03em; line-height: 1.45; color: var(--muted); }
+  .layer-group .src + .layer-toggle { margin-top: 12px; }
+  .key-dc { width: 10px; height: 10px; border-radius: 0; background: var(--colossus); border: 1.5px solid var(--text); }
+  .key-xlink { height: 0; border-radius: 0; border-top: 2px dotted var(--colossus); }
+  .rec-show { margin: 10px 0 0; font-size: 13px; }
+  .rec-show input { width: 14px; height: 14px; margin: 0; accent-color: var(--text); }
+  .copied { position: fixed; left: 50%; bottom: 120px; transform: translateX(-50%); z-index: 1300; padding: 8px 14px; font: 12px var(--mono); color: var(--bg); background: var(--text); }
+
+
+
+  /* ---------- tract layers and score ---------- */
+  .ty { margin: 6px 0 10px; }
+  .ty label { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+  .ty output { color: var(--text); font-size: 15px; }
+  .ty input { width: 100%; accent-color: var(--text); }
+  .ty-axis { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 9.5px; color: var(--muted); }
+  .views { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 6px; }
+  .vbtn { font: 12px var(--font); padding: 4px 8px; color: var(--text); background: transparent; border: 1px solid var(--border); border-radius: 0; cursor: pointer; }
+  .vbtn:hover { border-color: var(--text); }
+  .vbtn[aria-pressed="true"] { color: var(--bg); background: var(--text); border-color: var(--text); }
+  .tract-legend .tl-sw { display: flex; flex-wrap: wrap; gap: 4px 10px; margin: 4px 0; font: 10.5px var(--mono); color: var(--muted); }
+  .tract-legend i { display: inline-block; width: 14px; height: 10px; margin-right: 4px; vertical-align: -1px; border: 1px solid rgba(0,0,0,0.15); }
+  .i-hatch { background: repeating-linear-gradient(45deg, #fff 0 2px, #9a9a9a 2px 3px); }
+  .i-empty { background: radial-gradient(circle, #9a9a9a 1px, #e8e8e8 1.2px) 0 0 / 5px 5px; }
+  .wt { display: grid; grid-template-columns: 1fr 90px 26px; align-items: center; gap: 6px; margin: 3px 0; font-size: 12.5px; }
+  .wt input { width: 100%; accent-color: var(--text); }
+  .wt output { font: 11px var(--mono); text-align: right; }
+  .wt-gap { margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--border); }
+  .tr-pop h3 { margin: 0; font-size: 15px; font-weight: 600; }
+  .tr-sub, .tr-ctx { margin: 2px 0 6px; font: 10.5px var(--mono); color: var(--muted); }
+  .tr-score { margin: 6px 0; } .tr-score b { font: 500 26px var(--mono); margin-right: 6px; } .tr-score span { display: block; font-size: 11px; color: var(--muted); }
+  .tr-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+  .tr-table th, .tr-table td { text-align: left; padding: 3px 6px 3px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .tr-table td:nth-child(2) { font-family: var(--mono); width: 32px; }
+  .tr-table td span { display: block; font-size: 10px; color: var(--muted); }
+  .tr-cat th, .tr-cat td { padding-top: 7px; font-weight: 600; border-bottom: 1px solid var(--text); }
+  .tr-gap { font-style: normal; color: var(--warn); }
+  .lgi { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 3px; margin-right: 2px; font: 700 11px var(--mono); color: #fff; border: 1.5px solid var(--bg); box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+  .lgi b { margin-left: 2px; font-weight: 500; }
+  .lgi--inj { background: #b3261e; border-radius: 3px; }
+  .lgi--case { background: #141414; border-radius: 50%; }
+  .lgi--permit { background: #6a6a6a; }
+  .lg-cluster { display: flex; white-space: nowrap; background: none !important; border: 0 !important; width: auto !important; height: auto !important; }
+  .lg-cluster span.lgi { width: auto; }
+  .lg-key .lgi { flex: none; }
+  .mon { display: block; width: 12px; height: 12px; transform: rotate(45deg); border: 1.5px solid #141414; }
+  .mon--ok { background: #2f6f4f; } .mon--part { background: #e0b341; } .mon--none { background: #fff; border-style: dashed; }
+  .sub-legend .mon { display: inline-block; width: 9px; height: 9px; margin-right: 6px; }
+  .mon-icon, .sub-icon, .sch-icon { background: none; border: 0; }
+  .sub-icon span { display: block; width: 9px; height: 9px; background: #fff; border: 2px solid #4a4a4a; }
+  .sch-icon span { display: block; width: 9px; height: 9px; border-radius: 50%; background: #3d6fb4; border: 1.5px solid #fff; box-shadow: 0 0 0 1px #3d6fb4; }
+
+  /* ---------- extra legend keys ---------- */
+  .key-county { height: 0; border-radius: 0; border-top: 2px dashed var(--text); }
+  .key-city { height: 0; border-radius: 0; border-top: 1.5px dotted var(--text); }
+  .key-sat { background: linear-gradient(135deg, #6f7a5a, #a59a7a); border-radius: 50%; }
+
+  /* ---------- export mode: a true-size print sheet beside its settings ---------- */
+  .export { position: fixed; top: var(--nav-h); left: 0; right: 0; bottom: 0; z-index: 1050; display: grid; grid-template-columns: 320px 1fr; background: var(--bg); }
+  .export[hidden] { display: none; }
+  body.exporting .panel, body.exporting .timeline, body.exporting .sat-card, body.exporting .rec-banner { display: none !important; }
+  body.exporting::after { display: none; }
+  .export-panel { overflow-y: auto; padding: 26px 24px 40px; border-right: 1px solid var(--border); background: var(--bg); }
+  .export-panel h2 { margin: 0 0 8px; font-size: 24px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.1; }
+  .xf { display: grid; gap: 4px; margin: 14px 0 0; font-family: var(--mono); font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+  .xf input, .xf textarea, .xf select { font: 14px var(--font); color: var(--text); background: transparent; border: 0; border-bottom: 1px solid var(--text); border-radius: 0; padding: 5px 0; text-transform: none; letter-spacing: 0; }
+  .xf textarea { min-height: 96px; resize: vertical; border: 1px solid var(--border); padding: 6px; }
+  .xf-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .export-panel .btn { display: block; width: 100%; margin-top: 18px; padding: 10px 12px; text-align: center; border: 1px solid var(--text) !important; }
+  .export-panel .btn-primary { color: var(--bg) !important; background: var(--text) !important; }
+  .export-panel .btn-primary:disabled { opacity: 0.4; cursor: wait; }
+  .export-stage { overflow: auto; padding: 28px; background: #e4e4e4; }
+  .sheet { --pw: 11in; --ph: 8.5in; --m: 0.45in; width: max-content; margin: 0 auto; color: #141414; font-family: "Inter", system-ui, sans-serif; }
+  .sheet * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .frame { padding: var(--m); margin: 0 0 24px; background: #fff; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.14); }
+  .page { width: calc(var(--pw) - 2 * var(--m)); }
+  .page-1 { height: calc(var(--ph) - 2 * var(--m) - 0.06in); overflow: hidden; display: grid; grid-template-rows: auto 1fr auto; gap: 0.12in; }
+  .page-2 { min-height: calc(var(--ph) - 2 * var(--m) - 0.06in); }
+  .sh-head { border-bottom: 1.5px solid #141414; padding-bottom: 0.08in; }
+  .sh-kicker { margin: 0; font: 500 7.5pt var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: #6a6a6a; }
+  .sheet h1 { margin: 2pt 0 2pt; font: 500 19pt "Inter", sans-serif; letter-spacing: -0.02em; text-transform: none; }
+  .sh-meta { margin: 0; font: 7.5pt var(--mono); color: #4a4a4a; }
+  .sh-body { min-height: 0; display: grid; grid-template-columns: 1fr 2.5in; gap: 0.16in; }
+  .sheet[data-orient="portrait"] .sh-body { grid-template-columns: 1fr; grid-template-rows: 1fr minmax(0, 2.9in); }
+  .sheet[data-orient="portrait"] #sh-legend { columns: 2; column-gap: 0.2in; }
+  .sh-map { position: relative; min-height: 0; overflow: hidden; border: 1px solid #141414; }
+  #map.leaflet-container { }
+  .sh-map #map { position: absolute; inset: 0; top: 0; }
+  .sh-side { min-height: 0; overflow: hidden; font-size: 7.5pt; line-height: 1.3; }
+  .sheet h3 { margin: 0 0 4pt; font: 500 7.5pt var(--mono); letter-spacing: 0.06em; text-transform: uppercase; }
+  .lg { break-inside: avoid; margin: 0 0 6pt; }
+  .lg h4 { margin: 0 0 2pt; font-size: 8pt; font-weight: 600; }
+  .lg h4 small { font: 7pt var(--mono); color: #6a6a6a; font-weight: 400; }
+  .lg ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2pt; }
+  .lg li { display: grid; grid-template-columns: 18px 1fr; align-items: center; gap: 5px; }
+  .lg li em { font-style: normal; font: 6.5pt var(--mono); color: #6a6a6a; }
+  .lg li.sh-seq, .lg li.sh-noise { display: block; }
+  .lg li.lg-note { display: block; color: #4a4a4a; }
+  body.exporting .leaflet-control-attribution { display: none; }
+  .lg .seq-legend { margin: 0; font-size: 6.5pt; }
+  .lg .sub-legend { margin: 0; gap: 2pt 8pt; font-size: 6.5pt; color: #4a4a4a; }
+  .lg .count-icon span, .lg .dec-icon span { font-size: 8px; padding: 0 3px; width: auto; height: auto; }
+  .lg .key { width: 16px; }
+  .sheet.dense .sh-side { font-size: 6.5pt; }
+  .sheet.dense .lg { margin-bottom: 3pt; }
+  .sheet.dense .lg h4 { font-size: 7pt; }
+  .sheet.wide .sh-body { grid-template-columns: 1fr 4in; }
+  .sheet.wide #sh-legend { columns: 2; column-gap: 0.18in; }
+  .sheet.wide[data-orient="portrait"] .sh-body { grid-template-columns: 1fr; grid-template-rows: 1fr minmax(0, 4in); }
+  .sheet.wide[data-orient="portrait"] #sh-legend { columns: 3; }
+  .sh-see2, .sh-legend2 { display: none; }
+  .sheet.legend-p2 #sh-legend { display: none; }
+  .sheet.legend-p2 .sh-see2, .sheet.legend-p2 .sh-legend2 { display: block; }
+  .sh-legend2 { margin-bottom: 12pt; font-size: 8pt; } .sh-legend2 #sh-legend2 { columns: 3; column-gap: 0.25in; }
+  .sh-notes { margin-top: 8pt; padding-top: 6pt; border-top: 1px solid #d0d0d0; }
+  .sh-notes p { margin: 0; white-space: pre-wrap; font-size: 8pt; }
+  .sh-foot { display: grid; grid-template-columns: auto 1fr; gap: 0.14in; align-items: start; padding-top: 0.08in; border-top: 1px solid #d0d0d0; font-size: 6.8pt; line-height: 1.35; color: #4a4a4a; }
+  .sh-qr img, .sh-qr canvas { display: block; width: 0.78in !important; height: 0.78in !important; }
+  .sh-link span { display: block; }
+  .sh-link a { color: #141414; word-break: break-all; font-family: var(--mono); font-size: 6.3pt; }
+  .sh-attr { margin-top: 2pt; color: #6a6a6a; }
+  .page-2 h2 { margin: 0 0 6pt; font: 500 13pt "Inter", sans-serif; }
+  .page-2 h3 { margin-top: 12pt; break-after: avoid; }
+  .page-2 h3 + p, .page-2 h3 + table, .page-2 h3 + ol { break-before: avoid; }
+  .sh-cite { width: 100%; border-collapse: collapse; font-size: 7.5pt; line-height: 1.3; }
+  .sh-cite th { text-align: left; font: 500 6.5pt var(--mono); letter-spacing: 0.05em; text-transform: uppercase; color: #6a6a6a; border-bottom: 1px solid #141414; padding: 3pt 6pt 3pt 0; }
+  .sh-cite td { vertical-align: top; padding: 4pt 6pt 4pt 0; border-bottom: 1px solid #e0e0e0; }
+  .sh-cite tr { break-inside: avoid; }
+  .sh-cite tr.sh-cat td { padding-top: 8pt; border-bottom: 1px solid #141414; }
+  .sh-cite td span { display: block; color: #6a6a6a; }
+  .sh-cite td a { display: block; color: #141414; font: 6.3pt var(--mono); word-break: break-all; }
+  .sh-st { display: inline-block !important; margin-top: 2pt; padding: 0 3pt; border: 1px solid #141414; color: #141414 !important; font: 6.3pt var(--mono); text-transform: uppercase; }
+  .sh-st.st--alleged, .sh-st.st--filed_allegation { color: #a06a00 !important; border-color: #a06a00; }
+  .sh-small { margin: 4pt 0; font-size: 7pt; line-height: 1.4; color: #4a4a4a; }
+  .sh-list { list-style: none; margin: 0; padding: 0; font-size: 7.5pt; line-height: 1.35; }
+  .sh-list li { padding: 3pt 0; border-bottom: 1px solid #e0e0e0; break-inside: avoid; }
+  .sh-list time { display: block; font: 6.5pt var(--mono); color: #6a6a6a; }
+  .sh-prov { margin: 2pt 0 0; font: 6.3pt var(--mono); color: #6a6a6a; }
+  .sh-prov a { display: block; color: #141414; word-break: break-all; }
+  .sh-prov .sh-st { margin: 0 2pt 0 0; }
+  body.exporting .leaflet-control-scale-line { font: 9px var(--mono); background: rgba(255, 255, 255, 0.85); border-color: #141414; }
+
+  @media print {
+    html, body { height: auto !important; background: #fff !important; }
+    body.exporting > *:not(.export) { display: none !important; }
+    body.exporting .export { position: static; display: block; background: none; }
+    .export-panel { display: none !important; }
+    .export-stage { overflow: visible; padding: 0; background: none; }
+    .sheet { margin: 0; }
+    .frame { padding: 0; margin: 0; box-shadow: none; }
+    .frame + .frame { break-before: page; }
+    .leaflet-control-zoom { display: none !important; }
+  }
+
+  /* ---------- site nav offsets (nav.css) ---------- */
+  #map { top: var(--nav-h); }
+  .panel { top: calc(var(--nav-h) + 16px); max-height: calc(100% - var(--nav-h) - 32px); }
+  :root[data-theme="light"] .panel { top: var(--nav-h); }
 </style>
 </head>
 <body>
+<nav class="site-nav" aria-label="Site">
+  <a class="brand" href="./">The Counter Map</a>
+  <ul>
+    <li><a href="./">Story</a></li>
+    <li><a href="explore.html" aria-current="page">Map</a></li>
+  </ul>
+</nav>
 <div id="map" aria-label="Map of the eastern United States"></div>
 
-<aside class="panel" aria-label="Map details">
+<aside class="panel" aria-label="Map layers and export">
   <button class="theme-btn" type="button" id="theme-btn" aria-label="Switch to light mode"></button>
-  <p class="eyebrow"><a href="./">← The story</a> · Explorer · TVA zone, 1910–2025</p>
+  <p class="eyebrow">Map tool · TVA service area &amp; xAI Colossus</p>
   <h1>The Counter Map</h1>
-  <p class="lede">Two machines, one grid. Press play below to watch the network spread like mycelium from the dams; click anything for its story.</p>
+  <p class="lede">Turn layers on and off, frame the view, then export a PDF that lists the source of every layer shown. Allegations are labeled as allegations.</p>
 
-  <div class="sites">
-    <button class="site" type="button" data-site="frontier" aria-pressed="false">
-      <span class="swatch"></span>
-      <span><span class="site-name">Oak Ridge</span><span class="site-meta">ORNL · Oak Ridge, TN</span></span>
-      <span class="chev" aria-hidden="true">→</span>
-    </button>
-    <button class="site" type="button" data-site="colossus" aria-pressed="false">
-      <span class="swatch"></span>
-      <span><span class="site-name">Colossus</span><span class="site-meta">xAI · Memphis, TN</span></span>
-      <span class="chev" aria-hidden="true">→</span>
-    </button>
+  <div class="tool-actions">
+    <button class="btn btn-primary" type="button" id="export-open">Export PDF</button>
+    <button class="btn" type="button" id="copy-link">Copy link to this view</button>
   </div>
-
-  <ul class="signals" id="signals" aria-label="Key figures"></ul>
-
   <div class="actions">
-    <button class="btn" type="button" id="show-both">Show both</button>
-    <button class="btn" type="button" id="reset">Seaboard view</button>
+    <button class="btn" type="button" id="zoom-xai">Memphis &amp; Southaven</button>
+    <button class="btn" type="button" id="reset">Whole TVA area</button>
   </div>
 
-  <section class="records" aria-label="Records">
-    <div class="rec-head"><h2>Your notes</h2><button class="rec-add" type="button" id="rec-add">＋ Add a note</button></div>
-    <p class="rec-note" id="rec-note">Private notes: a testimony, observation or correction pinned to a place. They are saved only in this browser, and nobody else can see them. Export them, with how you know each one, to share.</p>
-    <ol class="rec-list" id="rec-list"></ol>
-    <div class="rec-exports" id="rec-export" hidden>
-      <button class="btn" type="button" data-export="geojson">Export notes (GeoJSON)</button>
-      <button class="btn" type="button" data-export="csv">Export notes (CSV)</button>
+  <details class="more" id="g-score" open>
+    <summary>Injustice score</summary>
+    <p class="sub-note">One number per census tract and year for Shelby County, TN and DeSoto County, MS: health, income, noise, air, nearby infrastructure and legal activity, ranked against every tract in every year from 2019 to 2026. Race, authority and testimonies are not part of it. A screening index from public data, not a finding.</p>
+    <div class="ty">
+      <label for="tract-year">Tract year <output id="tract-year-out">2024</output></label>
+      <input type="range" id="tract-year" min="2019" max="2026" step="1" value="2024">
+      <div class="ty-axis"><span>2019</span><span>Colossus 1 · 2024</span><span>2026</span></div>
     </div>
-  </section>
+    <label class="field">Tract layer shown
+      <select id="tract-view"><option value="score">Injustice score</option></select>
+    </label>
+    <div id="tract-legend" class="tract-legend"></div>
+    <p class="sub-note" id="tract-note"></p>
+    <div id="score-weights-wrap">
+      <p class="layer-head">Weights</p>
+      <div id="score-weights"></div>
+      <p class="src">Missing data is never filled in; it scores as the value above. Method: <a href="docs/injustice-score-method.md" target="_blank" rel="noopener">how the score is built</a></p>
+    </div>
+    <p class="src">Moving the tract year also moves the xAI record (below) to December of that year. The grid timeline at the bottom is separate.</p>
+  </details>
 
-  <details class="more" open>
-    <summary>Legend</summary>
-    <ul class="legend">
-      <li><span class="key key-tva"></span>TVA power service area</li>
-      <li><span class="key key-tn"></span>Tennessee, home to both sites</li>
-      <li><span class="key key-line"></span><span>Straight-line distance: <span class="num" id="dist"></span></span></li>
-    </ul>
-    <div class="layer-group" id="plants-group">
-      <label class="layer-toggle"><input type="checkbox" id="toggle-plants" checked>Power plants <span class="hint">sized by capacity</span></label>
-      <ul class="subgrid types" id="plant-types"></ul>
-      <label class="layer-toggle sub-toggle"><input type="checkbox" id="toggle-xai" checked><svg class="shape" viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><path d="M10 1.5 L19 18 H1 Z" style="fill:var(--g-gas);stroke:var(--colossus);stroke-width:2.5px"/></svg>xAI off-grid gas turbines</label>
+  <details class="more" id="g-health" open>
+    <summary>Health</summary>
+    <div class="layer-group">
+      <div class="views" data-views="asthma,cancer,copd,asthma_er,absenteeism"></div>
+      <p class="src">CDC PLACES (asthma, cancer, COPD; to 2023) · CDC Tracking Network (asthma ER visits, Shelby, 2015–19) · school chronic absenteeism (TN, MS; weak stand-in)</p>
+      <label class="layer-toggle"><input type="checkbox" id="toggle-schools">Schools <span class="hint">chronic absenteeism by year</span></label>
+      <p class="src">TN Dept. of Education; Mississippi Report Card · locations: NCES</p>
     </div>
-    <div class="layer-group" id="lines-group">
-      <label class="layer-toggle"><input type="checkbox" id="toggle-lines" checked>Transmission lines</label>
-      <ul class="subgrid">
-        <li><span class="key key-v key-v500"></span>500 kV</li>
-        <li><span class="key key-v key-v230"></span>230 kV</li>
-        <li><span class="key key-v key-v161"></span>100–161 kV</li>
-        <li><span class="key key-v key-vlow"></span>69 kV and below</li>
-        <li><span class="key key-v key-vna"></span>Not listed</li>
-        <li class="wide"><span class="key key-v key-est"></span>Faded on the timeline: year estimated</li>
-      </ul>
+  </details>
+
+  <details class="more" id="g-race">
+    <summary>Race</summary>
+    <div class="layer-group">
+      <div class="views" data-views="black_pct"></div>
+      <p class="src">Census ACS 5-year · shown for context, never scored</p>
     </div>
-    <div class="layer-group" id="context-group">
-      <p class="layer-head">Community &amp; environment</p>
-      <label class="field">Counties, ACS 2020–2024
+  </details>
+
+  <details class="more" id="g-income">
+    <summary>Income</summary>
+    <div class="layer-group">
+      <div class="views" data-views="income,poverty"></div>
+      <p class="src">Census ACS 5-year · income in 2024 dollars · margins of error in tract details</p>
+    </div>
+    <div class="layer-group">
+      <label class="field">Counties across the TVA area, ACS 2020–2024
         <select id="county-var">
           <option value="">Off</option>
           <option value="dens">Population density</option>
@@ -662,6 +836,9 @@
         </select>
       </label>
       <div class="seq-legend" id="county-legend" hidden></div>
+      <p class="src">Census ACS 2020–2024, 5-year · Official · quintiles</p>
+    </div>
+    <div class="layer-group" id="bg-group">
       <label class="field">Block groups near the xAI sites, ACS 2020–2024
         <select id="bg-var">
           <option value="">Off</option>
@@ -672,7 +849,46 @@
       </label>
       <div class="seq-legend" id="bg-legend" hidden></div>
       <p class="sub-note" id="bg-note" hidden>Estimates with margins of error (click a block group). Homes near the Southaven plant were reported changing hands in Oct 2026, so these 2020–2024 figures may not describe who lives there now.</p>
-      <label class="layer-toggle"><input type="checkbox" id="toggle-air">Air-quality monitors, 2025</label>
+    </div>
+  </details>
+
+  <details class="more" id="g-noise">
+    <summary>Noise</summary>
+    <div class="layer-group">
+      <div class="views" data-views="noise"></div>
+      <p class="src">BTS transportation noise, 2020 (road, rail, air). Cannot show turbine or industrial noise.</p>
+    </div>
+    <div class="layer-group">
+      <label class="layer-toggle"><input type="checkbox" id="toggle-noise">Noise map tiles <span class="hint">road, rail, air · BTS 2022</span></label>
+      <div class="sub-legend" id="noise-legend" hidden>
+        <span><i style="background:#ffc107"></i>45</span><span><i style="background:#ff8000"></i>50</span><span><i style="background:#ff0000"></i>55</span>
+        <span><i style="background:#ff3399"></i>60</span><span><i style="background:#a300cc"></i>70</span><span><i style="background:#5200cc"></i>80</span>
+        <span><i style="background:#0000ff"></i>90+ dBA, 24-hour average</span>
+        <span class="wide">Modeled traffic noise. It does not include turbines or other industrial noise, and BTS says it is for trends, not for judging a location.</span>
+      </div>
+  </details>
+
+  <details class="more" id="g-authority">
+    <summary>Authority</summary>
+    <div class="layer-group">
+      <label class="layer-toggle"><input type="checkbox" id="toggle-juris">Who has authority <span class="hint">city, county, state lines</span></label>
+      <p class="src">Census TIGERweb · Official</p>
+    </div>
+  </details>
+
+  <details class="more" id="g-air" open>
+    <summary>Air pollution</summary>
+    <div class="layer-group">
+      <div class="views" data-views="pm25_model,o3_model,monitor_gap"></div>
+      <p class="src">Modeled estimates end in 2022 (CDC/EPA); later years are shown as no data. Monitor gap: distance to the nearest working regulatory monitor.</p>
+      <label class="layer-toggle"><input type="checkbox" id="toggle-monitors">Regulatory monitors near Memphis <span class="hint">by tract year</span></label>
+      <div class="sub-legend" id="monitors-legend" hidden>
+        <span><i class="mon mon--ok"></i>Complete year</span><span><i class="mon mon--part"></i>Incomplete year</span><span><i class="mon mon--none"></i>Not measuring that year</span>
+      </div>
+      <p class="src">EPA AirData annual summaries · Official</p>
+    </div>
+    <div class="layer-group">
+      <label class="layer-toggle"><input type="checkbox" id="toggle-air">Air-quality readings, TVA area, 2025</label>
       <div id="air-opts" hidden>
         <select class="sub-select" id="air-var" aria-label="Air pollutant">
           <option value="pm">PM2.5, annual mean (µg/m³)</option>
@@ -683,23 +899,49 @@
           <span><span class="key key-aq near" style="display:inline-block;vertical-align:-2px;margin-right:5px"></span>Within 10%</span>
           <span><span class="key key-aq over" style="display:inline-block;vertical-align:-2px;margin-right:5px"></span>▲ Above standard</span>
         </div>
-      </div>
-      <label class="layer-toggle"><input type="checkbox" id="toggle-sat">Satellite patches around generation</label>
-      <label class="layer-toggle"><input type="checkbox" id="toggle-noise">Transportation noise only <span class="hint">road, rail, air · 2022</span></label>
-      <div class="sub-legend" id="noise-legend" hidden>
-        <span><i style="background:#ffc107"></i>45</span><span><i style="background:#ff8000"></i>50</span><span><i style="background:#ff0000"></i>55</span>
-        <span><i style="background:#ff3399"></i>60</span><span><i style="background:#a300cc"></i>70</span><span><i style="background:#5200cc"></i>80</span>
-        <span><i style="background:#0000ff"></i>90+ dBA, 24-hour average</span>
-        <span class="wide">Modeled traffic noise. It does not include turbines or other industrial noise, and BTS says it is for trends, not for judging a location.</span>
-      </div>
-      <label class="layer-toggle"><input type="checkbox" id="toggle-ash">Coal ash sites <span class="hint">Kingston, Allen</span></label>
-      <label class="layer-toggle"><input type="checkbox" id="toggle-npl">Oak Ridge Superfund site <span class="hint">listed 1989</span></label>
-      <label class="layer-toggle"><input type="checkbox" id="toggle-wells">Memphis aquifer wells <span class="hint">USGS</span></label>
+  </details>
+
+  <details class="more" id="g-infra" open>
+    <summary>Infrastructure</summary>
+    <div class="layer-group" id="xai-group">
+      <label class="layer-toggle"><input type="checkbox" id="toggle-xai" checked>Turbines and xAI sites <span class="hint">Colossus 1 &amp; 2, Southaven</span></label>
+      <ul class="subgrid">
+        <li><span class="key key-dc"></span>Data center</li>
+        <li><svg class="shape" viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><path d="M10 1.5 L19 18 H1 Z" style="fill:var(--g-gas);stroke:var(--colossus);stroke-width:2.5px"/></svg>Off-grid gas turbines</li>
+        <li class="wide"><span class="key key-xlink"></span>Turbines → data center they power (schematic, not the cable route)</li>
+      </ul>
+      <p class="src">NAACP complaint, MDEQ, Mississippi Free Press · see each site</p>
+    </div>
+    <div class="layer-group" id="plants-group">
+      <label class="layer-toggle"><input type="checkbox" id="toggle-plants" checked>Generation sites <span class="hint">power plants, sized by capacity</span></label>
+      <ul class="subgrid types" id="plant-types"></ul>
+      <p class="src">EIA-860 generators, 2025 · Official · shown for the grid year at the bottom</p>
+    </div>
+    <div class="layer-group" id="lines-group">
+      <label class="layer-toggle"><input type="checkbox" id="toggle-lines" checked>Powerlines (transmission, 69 kV and up)</label>
+      <ul class="subgrid">
+        <li><span class="key key-v key-v500"></span>500 kV</li>
+        <li><span class="key key-v key-v230"></span>230 kV</li>
+        <li><span class="key key-v key-v161"></span>100–161 kV</li>
+        <li><span class="key key-v key-vlow"></span>69 kV and below</li>
+        <li><span class="key key-v key-vna"></span>Not listed</li>
+        <li class="wide"><span class="key key-v key-est"></span>Faded on the timeline: year estimated</li>
+      </ul>
+      <p class="src">HIFLD · Official · build years: OpenStreetMap, others estimated. Local distribution lines are not public.</p>
+    </div>
+    <div class="layer-group">
+      <label class="layer-toggle"><input type="checkbox" id="toggle-substations">Substations <span class="hint">Memphis area, today</span></label>
+      <p class="src">OpenStreetMap contributors (ODbL) · present-day; most have no build date, so not scored</p>
+    </div>
+    <div class="layer-group">
+      <label class="layer-toggle"><input type="checkbox" id="toggle-tva" checked>TVA power service area</label>
+      <ul class="subgrid"><li class="wide"><span class="key key-tva"></span>Service-area boundary; outside it is faded</li></ul>
+      <p class="src">TVA_Power_Service_Area · Official · Dec 2016</p>
     </div>
   </details>
 
   <details class="more" id="xai-record" open>
-    <summary>The xAI record, 2024–2027</summary>
+    <summary>Permits &amp; legal decisions, 2024–2027</summary>
     <p class="sub-note">Counts, permits, filings and rulings around Colossus 1, Colossus 2 and the Southaven turbines, each tagged with what kind of claim it is. Allegations are not findings.</p>
     <div class="xr-time">
       <span class="xr-date" id="xr-date"></span>
@@ -707,12 +949,41 @@
     </div>
     <p class="xr-readout" id="xr-readout"></p>
     <div class="layer-group">
-      <label class="layer-toggle"><input type="checkbox" id="toggle-counts" checked>Turbine counts <span class="hint">at the date above</span></label>
-      <label class="layer-toggle"><input type="checkbox" id="toggle-c3">Colossus 3 <span class="hint">planned, per the complaint</span></label>
-      <label class="layer-toggle"><input type="checkbox" id="toggle-juris">Who has authority <span class="hint">city, county, state lines</span></label>
       <label class="layer-toggle"><input type="checkbox" id="toggle-decisions" checked>Decisions <span class="hint">votes, permits, filings, rulings</span></label>
       <ul class="subgrid xr-juris" id="xr-juris"></ul>
       <ol class="xr-list" id="xr-list"></ol>
+      <ul class="subgrid lg-key">
+        <li><span class="lgi lgi--inj">!</span>Injunction motion or ruling</li>
+        <li><span class="lgi lgi--case">§</span>Lawsuit, filing, ruling, notice, appeal</li>
+        <li><span class="lgi lgi--permit">P</span>Permit, application, hearing, order, vote</li>
+      </ul>
+      <label class="layer-toggle"><input type="checkbox" id="toggle-counts" checked>Turbine counts <span class="hint">at the date above</span></label>
+      <p class="src">MDEQ Agreed Order, NAACP complaint, SELC · each count tagged</p>
+      <label class="layer-toggle"><input type="checkbox" id="toggle-c3">Colossus 3 <span class="hint">planned, per the complaint</span></label>
+      <p class="src">NAACP complaint · Alleged · geocoded address</p>
+    </div>
+  </details>
+
+  <section class="records" aria-label="Testimonies">
+    <div class="rec-head"><h2>Testimonies</h2><button class="rec-add" type="button" id="rec-add">＋ Add a note</button></div>
+    <label class="layer-toggle rec-show"><input type="checkbox" id="toggle-notes" checked>Show my notes on the map <span class="hint">never included in PDF exports</span></label>
+    <p class="rec-note" id="rec-note">Private notes: a testimony, observation or correction pinned to a place. They are saved only in this browser, and nobody else can see them. Export them, with how you know each one, to share.</p>
+    <ol class="rec-list" id="rec-list"></ol>
+    <div class="rec-exports" id="rec-export" hidden>
+      <button class="btn" type="button" data-export="geojson">Export notes (GeoJSON)</button>
+      <button class="btn" type="button" data-export="csv">Export notes (CSV)</button>
+    </div>
+  </section>
+
+  <details class="more" id="g-env">
+    <summary>Other context</summary>
+    <div class="layer-group">
+      <label class="layer-toggle"><input type="checkbox" id="toggle-ash">Coal ash sites <span class="hint">Kingston, Allen</span></label>
+      <p class="src">EPA (Kingston), Mississippi Free Press (Allen)</p>
+      <label class="layer-toggle"><input type="checkbox" id="toggle-wells">Memphis aquifer wells <span class="hint">USGS</span></label>
+      <p class="src">USGS National Water Information System · Official</p>
+      <label class="layer-toggle"><input type="checkbox" id="toggle-sat">Satellite patches around generation</label>
+      <p class="src">Esri World Imagery · around power plants and xAI sites</p>
     </div>
   </details>
 
@@ -747,31 +1018,70 @@
   </details>
 </section>
 
+
+<div class="export" id="export" hidden>
+  <aside class="export-panel" aria-label="Export settings">
+    <p class="eyebrow">Export PDF</p>
+    <h2>Frame and caption the exhibit</h2>
+    <p class="sub-note">Pan and zoom the map on the page to frame it. Only the layers that are switched on are printed, each with its source. Your private notes are never included.</p>
+    <label class="xf">Title<input id="ex-title" maxlength="120" value="TVA service area and the xAI Colossus sites"></label>
+    <label class="xf">Notes or caption<textarea id="ex-notes" maxlength="1500" placeholder="What this exhibit shows, for whom, a case or class name…"></textarea></label>
+    <label class="xf">Prepared by (optional)<input id="ex-by" maxlength="80"></label>
+    <div class="xf-row">
+      <label class="xf">Paper<select id="ex-paper"><option value="letter">US Letter</option><option value="a4">A4</option></select></label>
+      <label class="xf">Orientation<select id="ex-orient"><option value="landscape">Landscape</option><option value="portrait">Portrait</option></select></label>
+    </div>
+    <button class="btn btn-primary" type="button" id="ex-print" disabled>Save as PDF…</button>
+    <p class="sub-note" id="ex-status" aria-live="polite">Loading map tiles…</p>
+    <p class="sub-note">Best in Chrome or Edge. In the print dialog, choose <b>Save as PDF</b> and turn off <b>Headers and footers</b> (each page already carries the title, date and page number).</p>
+    <button class="btn" type="button" id="ex-close">← Back to the map</button>
+  </aside>
+  <div class="export-stage">
+    <div class="sheet" id="sheet">
+      <div class="frame"><section class="page page-1">
+        <header class="sh-head">
+          <p class="sh-kicker">The Counter Map · TVA service area &amp; xAI Colossus</p>
+          <h1 id="sh-title"></h1>
+          <p class="sh-meta" id="sh-meta"></p>
+        </header>
+        <div class="sh-body">
+          <div class="sh-map" id="sh-map"></div>
+          <aside class="sh-side">
+            <h3>Legend</h3>
+            <div id="sh-legend"></div>
+            <p class="sh-small sh-see2">Legend: see page 2.</p>
+            <div class="sh-notes" id="sh-notes" hidden></div>
+          </aside>
+        </div>
+        <footer class="sh-foot">
+          <div id="sh-qr" class="sh-qr" aria-hidden="true"></div>
+          <div class="sh-link">
+            <b>Reopen this view:</b> <a id="sh-url"></a>
+            <span>The link opens the map's current data, which may have changed since this page was generated. Sources and their status are listed on the next page. Allegations are not findings.</span>
+            <span id="sh-attr" class="sh-attr"></span>
+          </div>
+        </footer>
+      </section></div>
+      <div class="frame"><section class="page page-2">
+        <div class="sh-legend2"><h3>Legend</h3><div id="sh-legend2"></div></div>
+        <h2>Sources for the layers shown</h2>
+        <table class="sh-cite">
+          <thead><tr><th>Layer</th><th>Source</th><th>Kind of source · claim</th><th>As of</th></tr></thead>
+          <tbody id="sh-cites"></tbody>
+        </table>
+        <div id="sh-extra"></div>
+        <h3>How to read the labels</h3>
+        <p class="sh-small"><b>Kind of source.</b> Official: agency, regulator or court record. Secondary: news or reference reporting. Community: residents' or groups' accounts. Self-reported: the company's own statements. Derived: estimated or modeled for this map.</p>
+        <p class="sh-small"><b>Kind of claim.</b> Alleged / Filed · allegation: stated in a complaint or filing, not proven. Regulator-stated: stated by the agency. Permitted / Approved: an issued permit or vote. Ruled: a court ruling. Reported: published account. Estimated: computed or modeled. Excerpt: checked only from a search excerpt; read the source before quoting.</p>
+        <p class="sh-small">Compiled from public records by The Counter Map. Verify each source before relying on it in a filing.</p>
+      </section></div>
+    </div>
+  </div>
+</div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
 <script>
   const SITES = [
-    {
-      id: "frontier",
-      name: "Oak Ridge",
-      lat: 35.9301,
-      lng: -84.3119,
-      popup: `
-        <div class="pop pop--frontier">
-          <h2>Oak Ridge</h2>
-          <p class="sub">Oak Ridge National Laboratory · Oak Ridge, TN</p>
-          <dl>
-            <dt>System</dt><dd>Frontier exascale supercomputer</dd>
-            <dt>Operator</dt><dd>U.S. Dept. of Energy, Oak Ridge Leadership Computing Facility</dd>
-            <dt>Built by</dt><dd>HPE Cray, with AMD CPUs and GPUs</dd>
-            <dt>Milestone</dt><dd>First exascale system on the TOP500 (June 2022, 1.1 exaflops)</dd>
-            <dt>Peak</dt><dd>About 2 exaflops theoretical</dd>
-            <dt>Used for</dt><dd>Open scientific research</dd>
-          </dl>
-          <p class="coords">35.9301° N, 84.3119° W</p>
-          <a href="https://www.olcf.ornl.gov/frontier/" target="_blank" rel="noopener">OLCF: Frontier ↗</a>
-        </div>`
-    },
     {
       id: "colossus",
       name: "Colossus",
@@ -799,7 +1109,9 @@
     }
   ];
 
-  const SEABOARD_BOUNDS = L.latLngBounds([24.4, -91.6], [47.5, -66.9]);
+  const TVA_BOUNDS = L.latLngBounds([32.3, -90.4], [37.6, -81.6]);
+  const XAI_BOUNDS = L.latLngBounds([34.94, -90.22], [35.10, -89.98]);
+  const markers = {};
 
   const panel = document.querySelector(".panel");
   const details = document.querySelector(".more");
@@ -824,9 +1136,9 @@
     .setView([36, -79], 5);
   L.control.zoom({ position: "bottomright" }).addTo(map);
 
-  // Keep the seaboard framed until the visitor moves the map themselves.
+  // Keep the TVA area framed until the visitor moves the map themselves.
   let autoFit = true;
-  const fitSeaboard = () => { if (map.getSize().x > 0) map.fitBounds(SEABOARD_BOUNDS, fitOpts()); };
+  const fitSeaboard = () => { if (map.getSize().x > 0) map.fitBounds(TVA_BOUNDS, { ...fitOpts(), animate: false }); };
   ["pointerdown", "wheel", "touchstart"].forEach(t =>
     map.getContainer().addEventListener(t, () => { autoFit = false; }, { passive: true }));
   map.on("resize", () => { if (autoFit) fitSeaboard(); });
@@ -895,11 +1207,9 @@
 
   // States: Tennessee shaded; any state is clickable.
   const stateStyle = (name, hover) => {
-    const c = palette[name === "Tennessee" ? "--tn" : "--muted"];
+    const c = palette["--muted"];
     if (countyVar) return { color: c, weight: 1, opacity: 0.6, fillOpacity: 0 };
-    return name === "Tennessee"
-      ? { color: c, weight: 1, opacity: 0.5, fillColor: c, fillOpacity: hover ? 0.1 : 0.04 }
-      : { color: c, weight: 1, opacity: 0.35, fillColor: c, fillOpacity: hover ? 0.16 : 0.04 };
+    return { color: c, weight: 1, opacity: 0.35, fillColor: c, fillOpacity: hover ? 0.16 : 0.04 };
   };
   let statesLayer = null;
   fetch("https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-10m.json")
@@ -911,13 +1221,12 @@
         style: f => stateStyle(f.properties.name, false),
         onEachFeature: (f, layer) => {
           const n = f.properties.name;
-          const tag = n === "Tennessee" ? "<span>Home to both supercomputer sites</span>" : "";
           layer.on("mouseover", () => layer.setStyle(stateStyle(n, true)));
           layer.on("mouseout", () => layer.setStyle(stateStyle(n, false)));
           layer.on("click", e => {
             L.popup({ className: "state-popup", autoPanPaddingTopLeft: panelPadding() })
               .setLatLng(e.latlng)
-              .setContent(`<div class="state-pop"><strong>${n}</strong>${tag}</div>`)
+              .setContent(`<div class="state-pop"><strong>${n}</strong></div>`)
               .openOn(map);
           });
         }
@@ -954,7 +1263,6 @@
   }
   // Timeline state. Off = today's map; on = the network and fleet as they stood in TL.year.
   const TL = { start: 1910, end: 2025, year: 2025, on: false, timer: null };
-  const TVA_BOUNDS = L.latLngBounds([32.3, -90.4], [37.6, -81.6]);
 
   // Today's network (HIFLD), every line with an in-service year: recorded in OpenStreetMap, or estimated from
   // network dependencies (a line enters service once both of its ends exist; see the note under the timeline).
@@ -1014,7 +1322,6 @@
       restack();
       renderNote();
       renderStats();
-      renderSignals();
     })
     .catch(err => console.warn("Transmission lines unavailable:", err));
 
@@ -1120,7 +1427,6 @@
       if (togglePlants.checked) plantsLayer.addTo(map);
       buildChart();
       setYear(TL.end);
-      renderSignals();
       syncSat();
     })
     .catch(err => console.warn("Power plants unavailable:", err));
@@ -1215,19 +1521,6 @@
   }
 
 
-  // Three readouts computed from the data: what shrank, what spread, and what the newcomer adds.
-  function renderSignals() {
-    if (!capacitySeries || !lineItems.length) return;
-    const at = (y, t) => capacitySeries[y - TL.start][TYPE_KEYS.indexOf(t)] / 1000;
-    const total2025 = capacitySeries[TL.end - TL.start].reduce((a, b) => a + b, 0) / 1000;
-    const miBy = y => Math.round(lineItems.reduce((a, it) => a + (it.p.y <= y ? it.km : 0), 0) * 0.621371);
-    const XAI_PEAK_GW = 1.775; // 69 mobile units, Jul 2026 (Scientific American). SOURCE NEEDED: not in the Nov 2026 research package; derived figure.
-    document.getElementById("signals").innerHTML = [
-      [`<span class="down">${at(2010, "coal").toFixed(1)}→${at(TL.end, "coal").toFixed(1)}</span>`, "GW of coal, 2010 → 2025", "Retired or converted to gas"],
-      [`${(miBy(TL.end) / miBy(1935)).toFixed(0)}×`, `transmission line-miles since 1935`, `${miBy(1935).toLocaleString("en-US")} → ${miBy(TL.end).toLocaleString("en-US")} mi`],
-      [`<span class="up">${Math.round(XAI_PEAK_GW / total2025 * 100)}%</span>`, "xAI's off-grid turbines vs. the zone's fleet", `about ${XAI_PEAK_GW} GW at peak (estimated), beside ${total2025.toFixed(1)} GW on the grid`]
-    ].map(([big, a, b]) => `<li><b>${big}</b><span>${a}</span><span>${b}</span></li>`).join("");
-  }
   function renderStats() {
     const lineMi = Math.round(lineItems.reduce((a, it) => a + (it.p.y <= TL.year ? it.km : 0), 0) * 0.621371);
     const plantsText = `<b>${fmtMW(yearTotals.mw)}</b> online at ${yearTotals.n} plants`;
@@ -1385,6 +1678,7 @@
       want ? xaiLayer.addLayer(marker) : xaiLayer.removeLayer(marker);
     });
     on && (!TL.on || TL.year >= 2025) ? xaiLayer.addLayer(xaiLink) : xaiLayer.removeLayer(xaiLink);
+    if (markers.colossus) on && (!TL.on || TL.year >= 2024) ? xaiLayer.addLayer(markers.colossus) : xaiLayer.removeLayer(markers.colossus);
   }
   syncXai();
   xaiToggle.addEventListener("change", syncXai);
@@ -1553,6 +1847,9 @@
   map.createPane("outside");
   map.getPane("outside").style.zIndex = 410;   // over states, counties and satellite patches; under the TVA border and markers
   map.getPane("outside").style.pointerEvents = "none";
+  const tvaLayer = L.layerGroup().addTo(map);
+  const tvaToggle = document.getElementById("toggle-tva");
+  tvaToggle.addEventListener("change", () => (tvaToggle.checked ? tvaLayer.addTo(map) : map.removeLayer(tvaLayer)));
   fetch(dataUrl("tva-service-area.geojson"))
     .then(r => r.json())
     .then(data => {
@@ -1562,45 +1859,25 @@
       outsideVeil = L.polygon([[[85, -179], [85, 179], [-85, 179], [-85, -179]], ...holes], {
         renderer: L.svg({ pane: "outside", padding: 1 }), interactive: false, stroke: false,
         ...veilStyle(), className: "outside-fade"
-      }).addTo(map);
+      }).addTo(tvaLayer);
       const sqmi = (Math.round(data.features[0].properties.sq_mi / 100) * 100).toLocaleString("en-US");
       const line = L.geoJSON(data, {
         pane: "tva",
         interactive: false,
         style: { className: "tva-line", fill: false, weight: 2.5 },
         attribution: 'Service area &copy; <a href="https://www.tva.com/">TVA</a>'
-      }).addTo(map);
+      }).addTo(tvaLayer);
       // A wide transparent copy of the border makes it easy to click.
       L.geoJSON(data, { pane: "tva", style: { className: "tva-hit", fill: false, weight: 14 } })
-        .bindPopup(`<div class="state-pop"><strong>TVA power service area</strong><span>About ${sqmi} sq mi across 7 states. Both supercomputer sites are inside it.</span>` +
+        .bindPopup(`<div class="state-pop"><strong>TVA power service area</strong><span>About ${sqmi} sq mi across 7 states. Colossus 1, Colossus 2 and the Southaven turbines are inside it.</span>` +
           `<span>Authority: the TVA board must approve any single load over 100 MW.</span>${prov(DATASET.tva)}</div>`,
           { autoPanPaddingTopLeft: panelPadding() })
         .on("mouseover", () => line.getLayers()[0].getElement().classList.add("is-hover"))
         .on("mouseout", () => line.getLayers()[0].getElement().classList.remove("is-hover"))
-        .addTo(map);
+        .addTo(tvaLayer);
     })
     .catch(err => console.warn("TVA boundary unavailable:", err));
 
-  // Line + distance between the two sites.
-  const [a, b] = SITES.map(s => L.latLng(s.lat, s.lng));
-  const meters = a.distanceTo(b);
-  const distText = `${Math.round(meters / 1609.344)} mi · ${Math.round(meters / 1000)} km`;
-  document.getElementById("dist").textContent = distText;
-  const link = L.polyline([a, b], { className: "link-line", interactive: false })
-    .bindTooltip(`${Math.round(meters / 1609.344)} mi`, { permanent: true, direction: "center", className: "link-label" })
-    .addTo(map);
-  // Zoomed far out, the distance label collides with the site labels.
-  const syncLinkLabel = () => (map.getZoom() >= 5 ? link.openTooltip() : link.closeTooltip());
-  map.on("zoomend", syncLinkLabel);
-  syncLinkLabel();
-
-  // Site markers.
-  const buttons = document.querySelectorAll(".site");
-  function setActive(id) {
-    buttons.forEach(btn => btn.setAttribute("aria-pressed", String(btn.dataset.site === id)));
-  }
-
-  const markers = {};
   SITES.forEach(s => {
     const icon = L.divIcon({
       className: "site-icon",
@@ -1611,12 +1888,10 @@
     });
     const m = L.marker([s.lat, s.lng], { icon, title: s.name, alt: s.name, riseOnHover: true })
       .bindPopup(s.popup, { maxWidth: 300, minWidth: 240 })
-      .bindTooltip(s.name, { permanent: true, direction: "right", offset: [12, 0], className: "site-label" })
-      .addTo(map);
-    m.on("popupopen", () => setActive(s.id));
-    m.on("popupclose", () => setActive(null));
+      .bindTooltip("Colossus 1", { permanent: true, direction: "right", offset: [12, 0], className: "site-label" });
     markers[s.id] = m;
   });
+  syncXai();
 
 
   // ---------- Satellite views: Esri World Imagery, fetched as one still image per site ----------
@@ -1628,7 +1903,6 @@
       "&bboxSR=4326&imageSR=3857&size=600,400&format=jpg&f=image";
   }
   const SAT_VIEWS = [
-    { marker: markers.frontier, lat: 35.9301, lng: -84.3119, km: 2.4, title: "Oak Ridge National Laboratory" },
     { marker: markers.colossus, lat: 35.05991, lng: -90.15632, km: 1.6, title: "Colossus 1 · former Electrolux plant" },
     ...xaiItems.map(({ site, marker }) => ({ marker, lat: site.lat, lng: site.lng, km: site.dc ? 1.4 : 1.2, title: site.dc ? "Colossus 2 · Tulane Rd" : "xAI turbine yard · Southaven" }))
   ];
@@ -1670,7 +1944,7 @@
       const mw = plantMix(pl.p.g, TL.on ? TL.year : TL.end).reduce((a, b) => a + b, 0);
       if (mw) out.push({ ll: pl.marker.getLatLng(), km: 1.8 + Math.sqrt(mw) * 0.17, seed: hashStr(pl.p.n) });
     });
-    const fixed = [[35.9301, -84.3119, "oak"], [35.05991, -90.15632, "colossus"]];
+    const fixed = [[35.05991, -90.15632, "colossus"]];
     XAI_SITES.forEach(x => { if (!TL.on || TL.year >= x.start) fixed.push([x.lat, x.lng, x.id]); });
     fixed.forEach(([lat, lng, id]) => out.push({ ll: L.latLng(lat, lng), km: 2.2, seed: hashStr(id) }));
     return out;
@@ -1909,6 +2183,9 @@
       next && `<span>Next: ${esc(fmtDate(next.date))}, ${esc(next.label)}</span>`
     ].filter(Boolean).join("<br>") || "<span>No turbines on record yet at this date.</span>";
   }
+  // Kind of legal event: matches tools/build_core_inputs.py (legal_weight).
+  const legalKind = e => (/\b(moved for|denied|granted|motion for)\b.{0,40}\binjunction/i.test(e.title) ? "inj"
+    : /court|notice|appeal/i.test(e.type) ? "case" : "permit");
   const eventsShown = () => xr.events.filter(e => xr.juris.has(e.jurisdiction) && dateKey(e.date) <= xrEnd());
   const eventHtml = e => `<li data-ev="${e.id}"><time>${esc(fmtDate(e.date))} · ${esc(XR_JURIS[e.jurisdiction])} · ${esc(e.type)}</time>
     <span class="xr-what"><b>${esc(e.actor)}</b>: ${esc(e.title)}</span>${prov(e)}</li>`;
@@ -1919,8 +2196,12 @@
     Object.entries(XR_SITES).forEach(([site, s]) => {
       const evs = shown.filter(e => e.site === site);
       if (!evs.length) return;
+      // Icons by kind, so it's visible where cases (and injunctions) concentrate. Same classes as the legal score input.
+      const kinds = { inj: 0, case: 0, permit: 0 };
+      evs.forEach(e => { kinds[legalKind(e)]++; });
+      const html = Object.entries(kinds).filter(([, n]) => n).map(([k, n]) => `<span class="lgi lgi--${k}">${{ inj: "!", case: "§", permit: "P" }[k]}<b>${n}</b></span>`).join("");
       L.marker(s.ll, {
-        icon: L.divIcon({ className: "dec-icon", html: `<span>${evs.length}</span>`, iconSize: [20, 20], iconAnchor: [30, 10] }),
+        icon: L.divIcon({ className: "dec-icon lg-cluster", html, iconSize: null, iconAnchor: [-14, -6] }),
         title: `${evs.length} decisions`, zIndexOffset: 850
       }).bindPopup(`<div class="pop pop--colossus"><h2>${esc(s.name)}: decisions to ${xrLabel()}</h2>
           <p class="sub">Votes, permits, filings and rulings about this site. Filings are allegations, not findings.</p>
@@ -2086,25 +2367,6 @@
     ashLayer.addTo(map);
   });
 
-  // ---------- Oak Ridge Reservation Superfund (NPL) boundary, EPA ----------
-  const nplToggle = document.getElementById("toggle-npl");
-  let nplLayer = null;
-  nplToggle.addEventListener("change", () => {
-    if (!nplToggle.checked) return nplLayer && map.removeLayer(nplLayer);
-    if (nplLayer) return nplLayer.addTo(map);
-    fetch(dataUrl("data/oak-ridge-npl.geojson")).then(r => r.json()).then(data => {
-      nplLayer = L.geoJSON(data, {
-        style: { color: palette["--text"], weight: 1.5, dashArray: "4 3", fillColor: palette["--text"], fillOpacity: 0.06 },
-        pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 7, color: palette["--text"], weight: 1.5, fillOpacity: 0.1 }),
-        attribution: "Superfund boundary: U.S. EPA",
-        onEachFeature: (f, layer) => layer.bindPopup(`<div class="state-pop"><strong>Oak Ridge Reservation (USDOE), Superfund site</strong>` +
-          `<span>Placed on the National Priorities List Dec 21, 1989, under a Federal Facility Agreement effective Jan 1, 1992. In Dec 2025 DOE and EPA said 16,377 of 33,069 acres need no cleanup.</span>` +
-          `${prov({ status: "documented", tier: "official", as_of: "1989-12-21", source_read: "excerpt", source_name: "EPA", source_url: f.properties.source_url || "https://www.epa.gov/newsreleases/epa-southeast-leaders-visited-oak-ridge-reservation-npl-site-and-signed-record" })}</div>`,
-          { maxWidth: 320, autoPanPaddingTopLeft: panelPadding() })
-      }).addTo(map);
-    }).catch(err => { console.warn("Superfund boundary unavailable:", err); nplToggle.checked = false; });
-  });
-
   // ---------- USGS Memphis-aquifer monitoring wells ----------
   const wellsToggle = document.getElementById("toggle-wells");
   let wellsLayer = null;
@@ -2137,7 +2399,7 @@
       <b>${esc(s.dataset)}</b><span>${s.url ? `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.publisher)} ↗</a>` : esc(s.publisher)}</span>
       ${s.map_note ? `<span>${esc(s.map_note)}</span>` : ""}${s.issue ? `<span>Caveat: ${esc(s.issue)}</span>` : ""}</li>`).join("");
   }).catch(err => console.warn("Source list unavailable:", err));
-  if (phone.matches) document.querySelectorAll("#xai-record, #about-data").forEach(d => { d.open = false; });
+  if (phone.matches) document.querySelectorAll("#xai-record, #about-data, #g-community, #g-env").forEach(d => { d.open = false; });
 
   function syncPopupPadding() {
     const p = panelPadding();
@@ -2147,25 +2409,22 @@
   window.addEventListener("resize", syncPopupPadding);
   details.addEventListener("toggle", syncPopupPadding);
 
-  function focusSite(id) {
-    const s = SITES.find(x => x.id === id);
+  document.getElementById("zoom-xai").addEventListener("click", () => {
     autoFit = false;
     map.closePopup();
-    map.once("moveend", () => markers[id].openPopup());
-    map.flyTo([s.lat, s.lng], 11, { duration: 1.4 });
-  }
-
-  buttons.forEach(btn => btn.addEventListener("click", () => focusSite(btn.dataset.site)));
-  document.getElementById("show-both").addEventListener("click", () => {
-    autoFit = false;
-    map.closePopup();
-    map.flyToBounds(L.latLngBounds([a, b]), { ...fitOpts(), duration: 1.2 });
+    map.flyToBounds(XAI_BOUNDS, { ...fitOpts(), duration: 1.2 });
   });
   document.getElementById("reset").addEventListener("click", () => {
     autoFit = true;
     map.closePopup();
-    map.flyToBounds(SEABOARD_BOUNDS, { ...fitOpts(), duration: 1.2 });
+    map.flyToBounds(TVA_BOUNDS, { ...fitOpts(), duration: 1.2 });
   });
+  // Private notes can be hidden; they are never part of an export.
+  const notesToggle = document.getElementById("toggle-notes");
+  notesToggle.addEventListener("change", () => (notesToggle.checked ? recLayer.addTo(map) : map.removeLayer(recLayer)));
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="score.js?v=2026-11-11b"></script>
+<script src="map-tool.js?v=2026-11-11k"></script>
 </body>
 </html>

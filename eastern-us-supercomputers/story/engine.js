@@ -2,11 +2,11 @@
 //  STORY ENGINE — scroll → chapter/step/progress → year → layers + camera + HUD.
 //  You shouldn't need to edit this to change content (see chapters.js / layers.js).
 // =====================================================================================
-import { CHAPTERS, TAGS, META, EXPLAINER, TESTIMONIES, PLACES } from "./chapters.js?v=2026-11-11a";
-import { LAYERS } from "./layers.js?v=2026-11-11a";
+import { CHAPTERS, TAGS, META, EXPLAINER, TESTIMONIES, PLACES } from "./chapters.js?v=2026-11-11b";
+import { LAYERS } from "./layers.js?v=2026-11-11b";
 
 const L = window.L;
-const DATA_VERSION = "2026-11-11a";
+const DATA_VERSION = "2026-11-11b";
 const params = new URLSearchParams(location.search);
 const DEBUG = params.has("debug");
 const HOLD = 0.14;  // first/last 14% of each chapter holds at its start/end year

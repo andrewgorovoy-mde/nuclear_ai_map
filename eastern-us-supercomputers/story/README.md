@@ -15,4 +15,4 @@ Each chapter holds its first/last 14% at its start/end year (`HOLD` in engine.js
 Soft zones are illustrative unless a chapter's note says otherwise; approximate geometry is labeled on the map.
 
 After editing any story file, bump the version so browsers don't keep a cached copy:
-`sed -i '' -E 's/2026-10-28l/NEW/g' index.html story/engine.js story/layers.js` (or any find/replace of the tag).
+`sed -i '' -E 's/2026-11-11b/NEW/g' index.html story/engine.js story/layers.js` (or any find/replace of the tag).

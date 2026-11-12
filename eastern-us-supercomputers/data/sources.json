@@ -63,7 +63,7 @@
    "id": "I-05",
    "layer": "Infrastructure",
    "dataset": "Oak Ridge facilities and history (K-25, Y-12, ORNL, Norris Dam)",
-   "on_map": "Yes",
+   "on_map": "Story only",
    "publisher": "DOE, ORNL, Y-12, NPS Manhattan Project NHP, Atomic Heritage Foundation, Tennessee Encyclopedia (story page)",
    "url": "https://eastern-us-supercomputers.vercel.app/",
    "tier": "Official + Secondary",

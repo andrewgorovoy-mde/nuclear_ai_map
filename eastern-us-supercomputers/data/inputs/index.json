@@ -1,0 +1,217 @@
+{
+ "built": "2026-11-11",
+ "inputs": [
+  {
+   "id": "absenteeism",
+   "label": "School chronic absenteeism vs county (nearby schools)",
+   "category": "health",
+   "unit": "percentage points vs county",
+   "direction": "higher_worse",
+   "years": [
+    "2019",
+    "2022",
+    "2023",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "file": "data/inputs/absenteeism.json"
+  },
+  {
+   "id": "asthma",
+   "label": "Adult asthma (current)",
+   "category": "health",
+   "unit": "% of adults",
+   "direction": "higher_worse",
+   "years": [
+    "2019",
+    "2020",
+    "2021",
+    "2022",
+    "2023"
+   ],
+   "file": "data/inputs/asthma.json"
+  },
+  {
+   "id": "asthma_er",
+   "label": "Asthma emergency visits, age-adjusted",
+   "category": "health",
+   "unit": "visits per 10,000 people per year",
+   "direction": "higher_worse",
+   "years": [
+    "2019"
+   ],
+   "file": "data/inputs/asthma_er.json"
+  },
+  {
+   "id": "black_pct",
+   "label": "Black residents (non-Hispanic)",
+   "category": "context",
+   "unit": "% of residents",
+   "direction": "none",
+   "years": [
+    "2019",
+    "2020",
+    "2021",
+    "2022",
+    "2023",
+    "2024"
+   ],
+   "file": "data/inputs/black_pct.json"
+  },
+  {
+   "id": "cancer",
+   "label": "Adult cancer (non-skin)",
+   "category": "health",
+   "unit": "% of adults",
+   "direction": "higher_worse",
+   "years": [
+    "2019",
+    "2020",
+    "2021",
+    "2022",
+    "2023"
+   ],
+   "file": "data/inputs/cancer.json"
+  },
+  {
+   "id": "copd",
+   "label": "Adult COPD",
+   "category": "health",
+   "unit": "% of adults",
+   "direction": "higher_worse",
+   "years": [
+    "2019",
+    "2020",
+    "2021",
+    "2022",
+    "2023"
+   ],
+   "file": "data/inputs/copd.json"
+  },
+  {
+   "id": "generation_proximity",
+   "label": "Fossil-fuel generation nearby",
+   "category": "infrastructure",
+   "unit": "MW, distance-weighted",
+   "direction": "higher_worse",
+   "years": [
+    "2019",
+    "2020",
+    "2021",
+    "2022",
+    "2023",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "file": "data/inputs/generation_proximity.json"
+  },
+  {
+   "id": "income",
+   "label": "Median household income",
+   "category": "income",
+   "unit": "2024 dollars",
+   "direction": "lower_worse",
+   "years": [
+    "2019",
+    "2020",
+    "2021",
+    "2022",
+    "2023",
+    "2024"
+   ],
+   "file": "data/inputs/income.json"
+  },
+  {
+   "id": "legal_activity",
+   "label": "Legal cases, permits and decisions nearby",
+   "category": "legal",
+   "unit": "weighted events, distance-weighted, cumulative",
+   "direction": "higher_worse",
+   "years": [
+    "2019",
+    "2020",
+    "2021",
+    "2022",
+    "2023",
+    "2024",
+    "2025",
+    "2026"
+   ],
+   "file": "data/inputs/legal_activity.json"
+  },
+  {
+   "id": "monitor_gap",
+   "label": "Distance to nearest regulatory air monitor (mean of PM2.5, NO2, SO2, ozone)",
+   "category": "air",
+   "unit": "km",
+   "direction": "higher_worse",
+   "years": [
+    "2019",
+    "2020",
+    "2021",
+    "2022",
+    "2023",
+    "2024",
+    "2025"
+   ],
+   "file": "data/inputs/monitor_gap.json"
+  },
+  {
+   "id": "noise",
+   "label": "Modeled transportation noise (road, rail, aviation)",
+   "category": "noise",
+   "unit": "dB(A), 24-hour LAeq, energy mean",
+   "direction": "higher_worse",
+   "years": [
+    "2020"
+   ],
+   "file": "data/inputs/noise.json"
+  },
+  {
+   "id": "o3_model",
+   "label": "Modeled ozone (daily 8-hr max), annual mean",
+   "category": "air",
+   "unit": "ppb",
+   "direction": "higher_worse",
+   "years": [
+    "2019",
+    "2020",
+    "2021",
+    "2022"
+   ],
+   "file": "data/inputs/o3_model.json"
+  },
+  {
+   "id": "pm25_model",
+   "label": "Modeled PM2.5, annual mean",
+   "category": "air",
+   "unit": "\u00b5g/m\u00b3",
+   "direction": "higher_worse",
+   "years": [
+    "2019",
+    "2020",
+    "2021",
+    "2022"
+   ],
+   "file": "data/inputs/pm25_model.json"
+  },
+  {
+   "id": "poverty",
+   "label": "People below the poverty line",
+   "category": "income",
+   "unit": "% of people",
+   "direction": "higher_worse",
+   "years": [
+    "2019",
+    "2020",
+    "2021",
+    "2022",
+    "2023",
+    "2024"
+   ],
+   "file": "data/inputs/poverty.json"
+  }
+ ]
+}
