@@ -60,7 +60,8 @@ if (canvas && cover) {
   }
   function resize() {
     const r = cover.getBoundingClientRect();
-    cols = Math.ceil(r.width / CELL); rows = Math.ceil(r.height / CELL);
+    // at least one cell: a page loaded in a hidden tab can report a zero-size cover
+    cols = Math.max(1, Math.ceil(r.width / CELL)); rows = Math.max(1, Math.ceil(r.height / CELL));
     canvas.width = cols; canvas.height = rows;
     const n = cols * rows;
     alive = new Uint8Array(n); next = new Uint8Array(n); age = new Uint16Array(n); ash = new Float32Array(n);

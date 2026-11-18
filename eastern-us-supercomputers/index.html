@@ -8,12 +8,13 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23ffffff'/%3E%3Ccircle cx='16' cy='16' r='9' fill='%2356a8ff' fill-opacity='.35'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23141414'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<link rel="stylesheet" href="nav.css?v=2026-11-11b">
-<link rel="stylesheet" href="story/story.css?v=2026-11-11b">
+<link rel="stylesheet" href="ui.css?v=2026-11-17b">
+<link rel="stylesheet" href="story/story.css?v=2026-11-17a">
 </head>
 <body>
+<a class="skip-link" href="#story-start">Skip to the story</a>
 <nav class="site-nav" aria-label="Site">
   <a class="brand" href="./">The Counter Map</a>
   <ul>
@@ -27,9 +28,9 @@
     <h1 id="story-title"></h1>
     <p id="story-subtitle" class="subtitle"></p>
   </div>
-  <span class="scroll-cue" aria-hidden="true">↓</span>
+  <a class="scroll-cue" href="#story-start">Scroll to begin <span aria-hidden="true">↓</span></a>
 </header>
-<div class="story">
+<div class="story" id="story-start" tabindex="-1">
   <main class="text">
     <div id="chapters"></div>
     <footer class="colophon">
@@ -37,7 +38,7 @@
       <p><a href="explore.html">Open the full map →</a></p>
     </footer>
   </main>
-  <div class="stage">
+  <aside class="stage" aria-label="Map that follows the story">
     <div id="map" aria-label="Map that follows the story"></div>
     <div class="hud" aria-live="polite">
       <div class="hud-top"><span id="hud-num"></span><span id="hud-title"></span></div>
@@ -54,13 +55,13 @@
       <ol class="il-list" id="il-list"></ol>
       <div class="il-chip"><span id="il-chip-n"></span><em>transistors on a single chip</em></div>
     </div>
-    <div id="testimony" class="testimony" hidden role="dialog" aria-label="Testimony"></div>
+    <div id="testimony" class="testimony" hidden role="dialog" aria-label="Testimony" tabindex="-1"></div>
     <ol id="stack" class="stack" aria-label="Layers of the story"></ol>
     <pre id="debug" class="debug" hidden></pre>
-  </div>
+  </aside>
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script type="module" src="story/life.js?v=2026-11-11b"></script>
-<script type="module" src="story/engine.js?v=2026-11-11b"></script>
+<script type="module" src="story/life.js?v=2026-11-17a"></script>
+<script type="module" src="story/engine.js?v=2026-11-17c"></script>
 </body>
 </html>

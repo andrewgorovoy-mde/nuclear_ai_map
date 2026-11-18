@@ -1,0 +1,108 @@
+/* =====================================================================================
+   UI — one design system for the story (/) and the map tool (explore.html).
+   Clean, light, large and readable: built for people who don't live on computers.
+   Every text color here passes WCAG AA on white; every control is at least 44px tall.
+   ===================================================================================== */
+:root {
+  /* text */
+  --ink: #141414;
+  --ink-2: #3d3d3d;
+  --muted: #5f5f5f;          /* 6.4:1 on white: the lightest color used for text */
+  /* surfaces and lines */
+  --paper: #ffffff;
+  --paper-2: #f4f5f7;
+  --paper-3: #e9ebef;
+  --rule: rgba(20, 20, 20, 0.16);
+  --rule-strong: rgba(20, 20, 20, 0.42);  /* control outlines: 3:1 against white */
+  /* one accent for actions, selection and focus */
+  --accent: #1f5fd6;
+  --accent-ink: #ffffff;
+  --accent-soft: #e8effc;
+  --focus-ring: 0 0 0 3px #ffffff, 0 0 0 6px var(--accent);
+  /* shape */
+  --r-sm: 8px;
+  --r-card: 14px;
+  --r-pill: 999px;
+  --shadow-card: 0 1px 2px rgba(20, 20, 20, 0.06), 0 8px 28px rgba(20, 20, 20, 0.10);
+  /* type */
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --nav-h: 56px;
+  color-scheme: light;
+}
+
+html { font-size: 100%; -webkit-text-size-adjust: 100%; }
+
+/* ---------- screen-reader-only text ---------- */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ---------- skip link ---------- */
+.skip-link {
+  position: fixed; top: 8px; left: 8px; z-index: 2000;
+  padding: 12px 18px; border-radius: var(--r-pill);
+  font: 600 1rem var(--sans); color: var(--accent-ink); background: var(--accent); text-decoration: none;
+  transform: translateY(-200%);
+}
+.skip-link:focus { transform: none; outline: none; box-shadow: var(--focus-ring); }
+
+/* ---------- site nav ---------- */
+.site-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1100;
+  height: var(--nav-h);
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 0 20px;
+  font-family: var(--sans); font-size: 1rem; letter-spacing: 0; text-transform: none;
+  color: var(--ink); background: var(--paper); border-bottom: 1px solid var(--rule);
+}
+.site-nav a { color: inherit; text-decoration: none; }
+.site-nav .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.0625rem; letter-spacing: -0.01em; white-space: nowrap; }
+.site-nav .brand::before {               /* the mark: a ringed dot, like the map's pins */
+  content: ""; flex: none; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink);
+}
+.site-nav ul { display: flex; gap: 4px; margin: 0; padding: 4px; list-style: none; background: var(--paper-2); border-radius: var(--r-pill); }
+.site-nav li a {
+  display: flex; align-items: center; min-height: 40px; padding: 0 18px; border-radius: var(--r-pill);
+  font-weight: 500; color: var(--ink-2); border: 0;
+}
+.site-nav li a:hover { color: var(--ink); background: var(--paper-3); }
+.site-nav li a[aria-current="page"] { color: var(--accent-ink); background: var(--ink); }
+.site-nav a:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 0 20px;
+  font: 600 1rem/1.2 var(--sans); letter-spacing: 0; text-transform: none; text-decoration: none;
+  color: var(--ink); background: var(--paper); border: 1.5px solid var(--rule-strong); border-radius: var(--r-pill);
+  cursor: pointer; transition: background 0.15s, border-color 0.15s;
+}
+.btn:hover { background: var(--paper-2); border-color: var(--ink); }
+.btn-primary { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+.btn-primary:hover { background: #1a51b8; border-color: #1a51b8; }
+.btn:disabled { opacity: 0.5; cursor: progress; }
+.btn svg { width: 20px; height: 20px; flex: none; }
+
+/* ---------- pills (segmented choices) ---------- */
+.pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px;
+  font: 500 0.9375rem var(--sans); color: var(--ink); background: var(--paper-2);
+  border: 1.5px solid transparent; border-radius: var(--r-pill); cursor: pointer;
+}
+.pill:hover { border-color: var(--rule-strong); }
+.pill[aria-pressed="true"] { color: var(--accent-ink); background: var(--ink); }
+
+/* ---------- focus: always visible on keyboard ---------- */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+/* ---------- motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+@media (max-width: 520px) {
+  .site-nav { padding: 0 12px; gap: 8px; }
+  .site-nav .brand { overflow: hidden; text-overflow: ellipsis; font-size: 1rem; }
+  .site-nav li a { padding: 0 14px; }
+}

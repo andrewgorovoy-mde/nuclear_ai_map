@@ -305,7 +305,7 @@ export const CHAPTERS = [
     lens: "none",
     layers: { tvaZone: {}, sitePins: { show: ["oakRidge", "colossus"] }, parallelLink: {} },
     steps: [
-      { html: `<table class="parallels"><thead><tr><th></th><th>Oak Ridge</th><th>Colossus</th></tr></thead><tbody>
+      { html: `<table class="parallels"><thead><tr><th scope="col"><span class="sr-only">Compared</span></th><th>Oak Ridge</th><th>Colossus</th></tr></thead><tbody>
         <tr><td>Driver</td><td>War</td><td>Market</td></tr>
         <tr><td>Speed</td><td>Plants in 2–3 yrs; S-50 in 69 days</td><td>122 days</td></tr>
         <tr><td>Power</td><td>~0.3 GW peak, ~1% of U.S.</td><td>150 MW grid + ~1.8 GW of turbines</td></tr>

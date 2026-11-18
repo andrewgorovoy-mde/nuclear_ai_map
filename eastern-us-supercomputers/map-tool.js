@@ -386,9 +386,8 @@
     stopPlaying();
     map.closePopup();
     generatedAt = new Date();
-    prev = { theme: document.documentElement.dataset.theme, autoFit, bounds: map.getBounds(), notes: map.hasLayer(recLayer) };
+    prev = { autoFit, bounds: map.getBounds(), notes: map.hasLayer(recLayer) };
     autoFit = false;
-    if (prev.theme !== "light") setTheme("light");
     map.removeLayer(recLayer);                     // private notes never go into an export
     document.body.classList.add("exporting");
     exportEl.hidden = false;
@@ -409,7 +408,6 @@
     map.invalidateSize({ pan: false });
     map.fitBounds(b, { animate: false });
     if (prev.notes && chk("notes")) recLayer.addTo(map);
-    if (prev.theme !== "light") setTheme(prev.theme);
     autoFit = false;
     writeHash(true);
   }

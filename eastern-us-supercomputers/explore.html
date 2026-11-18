@@ -8,755 +8,13 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%231d4ed8' fill-opacity='.2'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%231d4ed8'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
-<link rel="stylesheet" href="nav.css?v=2026-11-11b">
-<script>
-  try { document.documentElement.dataset.theme = localStorage.getItem("theme") || "light"; }
-  catch (e) { document.documentElement.dataset.theme = "light"; }
-</script>
-<style>
-  :root {
-    --bg: #060708;
-    --surface: rgba(9, 10, 11, 0.84);
-    --surface-solid: #0c0d0f;
-    --surface-hover: #15171a;
-    --text: #d8d3c4;
-    --muted: #7a766c;
-    --border: rgba(216, 211, 196, 0.12);
-    --shadow: 0 18px 50px rgba(0, 0, 0, 0.7);
-    --tva: #8d877a;
-    --tn: #d8d3c4;
-    --frontier: #c9f24a;
-    --colossus: #c4532b;
-    --line: #8d877a;
-    --focus: #d8d3c4;
-    --v500: #f1ecdc;
-    --v230: #d6cfbb;
-    --v161: #b3ab95;
-    --vlow: #857e6b;
-    --vna: #5c574c;
-    --g-nuclear: #c9f24a;
-    --g-coal: #6a625a;
-    --g-gas: #b4653c;
-    --g-hydro: #6c8a91;
-    --g-solar: #b9a65c;
-    --g-other: #56534c;
-    --seq1: #17171a;
-    --seq2: #2f2e2a;
-    --seq3: #4f4c43;
-    --seq4: #807a68;
-    --seq5: #c2b99f;
-    --warn: #d9a02b;
-    --crit: #c4532b;
-    --font: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-    color-scheme: dark;
-  }
-
-  * { box-sizing: border-box; }
-  html, body { height: 100%; margin: 0; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font);
-    font-size: 15px;
-    line-height: 1.45;
-    -webkit-font-smoothing: antialiased;
-  }
-  #map { position: fixed; inset: 0; background: var(--bg); }
-
-  /* ---------- Panel ---------- */
-  .panel {
-    position: fixed;
-    top: 16px;
-    left: 16px;
-    z-index: 1000;
-    width: 340px;
-    max-height: calc(100% - 32px);
-    overflow-y: auto;
-    padding: 18px 18px 14px;
-    background: var(--surface);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    box-shadow: var(--shadow);
-  }
-  .eyebrow {
-    margin: 0 0 4px;
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-  h1 { margin: 0 0 6px; font-size: 20px; line-height: 1.2; font-weight: 600; letter-spacing: -0.01em; }
-  .lede { margin: 0 0 14px; color: var(--muted); font-size: 13.5px; }
-
-  .sites { display: grid; gap: 8px; }
-  .site {
-    display: grid;
-    grid-template-columns: 12px 1fr auto;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    padding: 10px 12px;
-    font: inherit;
-    color: inherit;
-    text-align: left;
-    background: var(--surface-solid);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
-  }
-  .site:hover { background: var(--surface-hover); }
-  .site:focus-visible, .btn:focus-visible, summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-  .site[aria-pressed="true"] { border-color: var(--c); box-shadow: inset 3px 0 0 var(--c); }
-  .site[data-site="frontier"] { --c: var(--frontier); }
-  .site[data-site="colossus"] { --c: var(--colossus); }
-  .swatch { width: 12px; height: 12px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 25%, transparent); }
-  .site-name { display: block; font-weight: 600; }
-  .site-meta { display: block; font-size: 12.5px; color: var(--muted); }
-  .chev { color: var(--muted); font-size: 14px; }
-
-  .actions { display: flex; gap: 8px; margin-top: 10px; }
-  .btn {
-    flex: 1;
-    padding: 7px 10px;
-    font: inherit;
-    font-size: 13px;
-    font-weight: 500;
-    color: inherit;
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    cursor: pointer;
-  }
-  .btn:hover { background: var(--surface-hover); }
-
-  .more { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; }
-  .more summary { cursor: pointer; font-size: 13px; font-weight: 500; color: var(--muted); list-style: none; }
-  .more summary::-webkit-details-marker { display: none; }
-  .more summary::after { content: " +"; }
-  .more[open] summary::after { content: " −"; }
-  .legend { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 7px; font-size: 13px; }
-  .legend li { display: flex; align-items: center; gap: 10px; }
-  .key { flex: none; width: 18px; height: 12px; border-radius: 3px; }
-  .key-tva { height: 0; border-radius: 0; border-top: 3px solid var(--tva); }
-  .key-tn { background: color-mix(in srgb, var(--tn) 28%, transparent); border: 1px solid var(--tn); }
-  .key-line { height: 0; border-radius: 0; border-top: 2px dashed var(--line); }
-  .key-v { height: 0; border-radius: 0; border-top: var(--w) solid var(--c); }
-  .key-v500 { --c: var(--v500); --w: 3px; }
-  .key-v230 { --c: var(--v230); --w: 2.5px; }
-  .key-v161 { --c: var(--v161); --w: 2px; }
-  .key-vlow { --c: var(--vlow); --w: 1.5px; }
-  .key-vna { --c: var(--vna); --w: 1px; }
-  .layer-group { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 13px; }
-  .layer-toggle { display: flex; align-items: center; gap: 10px; font-weight: 500; cursor: pointer; }
-  .layer-toggle .hint { font-weight: 400; font-size: 12px; color: var(--muted); }
-  .layer-group input { flex: none; width: 14px; height: 14px; margin: 0; accent-color: var(--focus); cursor: pointer; }
-  .subgrid { list-style: none; margin: 8px 0 0; padding: 0 0 0 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; color: var(--muted); }
-  .subgrid li { display: flex; align-items: center; gap: 8px; }
-  .subgrid.types { grid-template-columns: 1fr; gap: 5px; }
-  .subgrid.types label { display: flex; align-items: center; gap: 8px; width: 100%; color: var(--text); cursor: pointer; }
-  .subgrid.types .num { margin-left: auto; color: var(--muted); font-size: 12px; }
-  .layer-group.off .subgrid { opacity: 0.45; }
-  .subgrid .wide { grid-column: 1 / -1; }
-  .key-est { --c: var(--v161); --w: 2px; opacity: 0.5; }
-  .shape { flex: none; width: 14px; height: 14px; overflow: visible; }
-  .shape path, .plant-icon path { fill: var(--c); stroke: var(--surface-solid); stroke-width: 1.5px; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
-  .t-nuclear { --c: var(--g-nuclear); }
-  .t-coal { --c: var(--g-coal); }
-  .t-gas { --c: var(--g-gas); }
-  .t-hydro { --c: var(--g-hydro); }
-  .t-solar { --c: var(--g-solar); }
-  .t-other { --c: var(--g-other); }
-  .plant-icon { background: none; border: 0; }
-  .plant-icon svg { display: block; overflow: visible; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.35)); }
-  .plant-icon:hover path { stroke: var(--text); }
-  .pop-title { display: flex; align-items: center; gap: 7px; }
-  .layer-head { margin: 0 0 8px; font-weight: 500; }
-  .field { display: grid; gap: 4px; margin: 0 0 8px; font-size: 12.5px; color: var(--muted); }
-  .field select, .sub-select {
-    width: 100%; padding: 5px 8px; font: inherit; font-size: 13px; color: var(--text);
-    background: var(--surface-solid); border: 1px solid var(--border); border-radius: 7px;
-  }
-  .sub-select { margin: 6px 0 0 24px; width: calc(100% - 24px); }
-  .seq-legend { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; margin: 0 0 10px; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
-  .seq-legend span { display: block; height: 10px; border-radius: 2px; }
-  .seq-legend em { font-style: normal; text-align: center; }
-  .sub-legend { margin: 6px 0 10px 24px; display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 12px; color: var(--muted); }
-  .sub-legend i { display: inline-block; width: 12px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
-  .layer-group .layer-toggle + .layer-toggle { margin-top: 8px; }
-  .sub-toggle { margin: 8px 0 0 24px; font-weight: 400; }
-  .aq-icon { width: auto !important; height: auto !important; background: none; border: 0; }
-  .aq {
-    display: inline-block; transform: translate(-50%, -50%); padding: 1px 5px; white-space: nowrap;
-    font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text);
-    background: var(--surface-solid); border: 1.5px solid var(--muted); border-radius: 5px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-  }
-  .aq--near { border-color: var(--warn); }
-  .aq--over { color: #fff; background: var(--crit); border-color: var(--crit); }
-  .key-aq { width: 18px; height: 12px; border-radius: 3px; border: 1.5px solid var(--muted); background: var(--surface-solid); }
-  .key-aq.near { border-color: var(--warn); }
-  .key-aq.over { background: var(--crit); border-color: var(--crit); }
-  .xai-icon { background: none; border: 0; }
-  .xai-icon svg { display: block; overflow: visible; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4)); }
-  .xai-icon path { fill: var(--g-gas); stroke: var(--colossus); stroke-width: 3px; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
-  .xai-link { stroke: var(--colossus); stroke-width: 2; stroke-dasharray: 2 5; stroke-linecap: round; fill: none; }
-  .num { font-family: var(--mono); font-size: 12.5px; }
-  .note { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
-
-  /* ---------- Map overlays ---------- */
-  .tva-line { stroke: var(--tva); stroke-width: 2.5; stroke-opacity: 0.9; stroke-linejoin: round; fill: none; transition: stroke-width 0.15s; }
-  .tva-line.is-hover { stroke-width: 4.5; }
-  .tva-hit { stroke: transparent; stroke-width: 14; fill: none; cursor: pointer; }
-  .link-line { stroke: var(--line); stroke-width: 2; stroke-dasharray: 6 6; stroke-opacity: 0.8; fill: none; }
-
-  .site-icon { background: none; border: 0; }
-  .pin { position: relative; display: block; width: 24px; height: 24px; }
-  .pin .dot, .pin .ring { position: absolute; inset: 0; margin: auto; border-radius: 50%; background: var(--c); }
-  .pin .dot { width: 14px; height: 14px; border: 2.5px solid var(--surface-solid); box-shadow: 0 1px 4px rgba(0,0,0,.35); }
-  .pin .ring { width: 24px; height: 24px; opacity: 0.35; animation: pulse 2.2s ease-out infinite; }
-  .pin--frontier { --c: var(--frontier); }
-  .pin--colossus { --c: var(--colossus); }
-  @keyframes pulse { 0% { transform: scale(0.6); opacity: 0.5; } 100% { transform: scale(1.9); opacity: 0; } }
-  @media (prefers-reduced-motion: reduce) { .pin .ring { animation: none; } }
-
-  .leaflet-container { font-family: var(--font); background: var(--bg); }
-  .leaflet-tooltip.site-label, .leaflet-tooltip.plant-tip, .leaflet-tooltip.xai-label {
-    padding: 3px 8px;
-    font-size: 12.5px;
-    font-weight: 600;
-    color: var(--text);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    box-shadow: 0 1px 4px rgba(0,0,0,.15);
-  }
-  .leaflet-tooltip.link-label {
-    padding: 2px 7px;
-    font-family: var(--mono);
-    font-size: 11.5px;
-    color: var(--text);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    box-shadow: none;
-  }
-  .leaflet-tooltip.site-label::before, .leaflet-tooltip.link-label::before, .leaflet-tooltip.plant-tip::before, .leaflet-tooltip.xai-label::before { display: none; }
-
-  .leaflet-popup-content-wrapper, .leaflet-popup-tip {
-    background: var(--surface-solid);
-    color: var(--text);
-    box-shadow: var(--shadow);
-  }
-  .leaflet-popup-content-wrapper { border-radius: 12px; border: 1px solid var(--border); }
-  .leaflet-popup-content { margin: 14px 16px; font-size: 13.5px; line-height: 1.45; }
-  .leaflet-container a.leaflet-popup-close-button { color: var(--muted); }
-  .pop h2 { margin: 0; font-size: 17px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .pop h2::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
-  .pop--frontier { --c: var(--frontier); }
-  .pop--colossus { --c: var(--colossus); }
-  .pop .sub { margin: 2px 0 10px; color: var(--muted); font-size: 12.5px; }
-  .pop dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0 0 10px; }
-  .pop dt { color: var(--muted); font-size: 12px; padding-top: 1px; }
-  .pop dd { margin: 0; }
-  .pop .coords { font-family: var(--mono); font-size: 11.5px; color: var(--muted); margin: 0 0 8px; }
-  .pop a, .leaflet-container .pop a { color: var(--focus); font-weight: 500; text-decoration: none; }
-  .pop a:hover { text-decoration: underline; }
-  .state-pop strong { font-size: 14px; }
-  .state-pop span { display: block; color: var(--muted); font-size: 12.5px; }
-
-  .leaflet-bar a, .leaflet-bar a:hover { background: var(--surface-solid); color: var(--text); border-color: var(--border); }
-  .leaflet-control-attribution { background: var(--surface) !important; color: var(--muted); }
-  .leaflet-control-attribution a { color: var(--muted); }
-
-  /* ---------- Timeline ---------- */
-  .timeline {
-    position: fixed;
-    left: 372px;
-    right: 16px;
-    bottom: 16px;
-    z-index: 1000;
-    max-width: 920px;
-    margin: 0 auto;
-    padding: 10px 14px;
-    background: var(--surface);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    box-shadow: var(--shadow);
-    font-size: 13px;
-  }
-  .tl-head { display: flex; align-items: center; gap: 10px; }
-  .tl-play {
-    flex: none; display: grid; place-items: center; width: 32px; height: 32px; padding: 0;
-    color: var(--text); background: var(--surface-solid); border: 1px solid var(--border); border-radius: 50%; cursor: pointer;
-  }
-  .tl-play:hover { background: var(--surface-hover); }
-  .tl-play svg { width: 12px; height: 12px; fill: currentColor; }
-  .tl-play:focus-visible, #tl-range:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-  .tl-year { flex: none; min-width: 4ch; font-family: var(--mono); font-size: 22px; font-weight: 500; font-variant-numeric: tabular-nums; }
-  .tl-stats { flex: 1; min-width: 0; color: var(--muted); }
-  .tl-stats b { color: var(--text); font-weight: 600; }
-  .timeline .tl-exit { flex: none; }
-  .tl-track { position: relative; margin-top: 6px; touch-action: none; }
-  .tl-chart { display: block; width: calc(100% - 16px); height: 48px; margin: 0 8px; cursor: pointer; }
-  .tl-chart path { stroke: none; fill: var(--c); opacity: 0.85; }
-  .tl-cursor { stroke: var(--text); stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
-  .tl-max { position: absolute; top: 0; left: 12px; font-family: var(--mono); font-size: 10.5px; color: var(--muted); pointer-events: none; }
-  #tl-range { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 18px; margin: 2px 0 0; background: transparent; cursor: pointer; }
-  #tl-range::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: var(--border); }
-  #tl-range::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px; border-radius: 50%; background: var(--focus); border: 2px solid var(--surface-solid); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); }
-  #tl-range::-moz-range-track { height: 4px; border-radius: 2px; background: var(--border); }
-  #tl-range::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--focus); border: 2px solid var(--surface-solid); }
-  .tl-axis { position: relative; height: 14px; margin: 0 8px; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
-  .tl-axis span { position: absolute; transform: translateX(-50%); }
-  .tl-axis span:first-child { transform: none; }
-  .tl-axis span:last-child { transform: translateX(-100%); }
-  .tl-note { margin: 6px 0 0; font-size: 11.5px; line-height: 1.35; color: var(--muted); }
-  .tl-about summary { margin-top: 4px; font-size: 12px; color: var(--muted); cursor: pointer; }
-  @media (min-width: 641px) { .tl-about summary { display: none; } }
-  .leaflet-bottom.leaflet-right { bottom: var(--tl-h, 0px); }
-  @media (max-width: 900px) {
-    .timeline { left: 16px; }
-    .panel { max-height: calc(100% - 48px - var(--tl-h, 0px)); }
-  }
-
-  /* ---------- Phone ---------- */
-  @media (max-width: 640px) {
-    .panel {
-      top: 12px;
-      left: 16px;
-      right: 16px;
-      width: auto;
-      max-height: 55%;
-      padding: 14px 14px 10px;
-    }
-    h1 { font-size: 17px; }
-    .lede { display: none; }
-    .sites { grid-template-columns: 1fr 1fr; }
-    .site { grid-template-columns: 10px 1fr; gap: 8px; padding: 8px 10px; }
-    .chev { display: none; }
-    .swatch { width: 10px; height: 10px; }
-    .site-meta { font-size: 11.5px; }
-    .panel { max-height: calc(100% - 36px - var(--tl-h, 0px)); }
-    .timeline { left: 12px; right: 12px; bottom: 12px; padding: 8px 10px; }
-    .tl-year { font-size: 18px; }
-    .tl-stats { font-size: 12px; }
-    .tl-chart { height: 34px; }
-    .tl-note { font-size: 10.5px; }
-    .leaflet-control-attribution { font-size: 10px; }
-  }
-
-  /* ---------- Dystopian minimal skin ---------- */
-  .panel, .timeline { border-radius: 3px; backdrop-filter: blur(10px) saturate(0.4); -webkit-backdrop-filter: blur(10px) saturate(0.4); }
-  .site, .btn, .field select, .sub-select, .tl-play, .leaflet-popup-content-wrapper { border-radius: 2px; }
-  .tl-play { border-radius: 50%; }
-  h1 { font-family: var(--mono); font-weight: 500; font-size: 17px; letter-spacing: 0.02em; text-transform: uppercase; }
-  .eyebrow, .layer-head, .tl-max, .layer-toggle { letter-spacing: 0.04em; }
-  .layer-head { font-family: var(--mono); font-size: 11px; text-transform: uppercase; color: var(--muted); }
-  .tl-year { color: var(--g-nuclear); }
-  #tl-range::-webkit-slider-thumb { background: var(--text); }
-  #tl-range::-moz-range-thumb { background: var(--text); }
-  .signals { list-style: none; margin: 0 0 14px; padding: 10px 0 0; border-top: 1px solid var(--border); display: grid; gap: 8px; }
-  .signals li { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 12.5px; color: var(--muted); }
-  .signals b { grid-row: span 2; align-self: center; min-width: 4.5ch; font-family: var(--mono); font-size: 18px; font-weight: 500; color: var(--text); }
-  .signals .up { color: var(--g-nuclear); }
-  .signals .down { color: var(--colossus); }
-  /* Basemap fades to ash so the network reads as the only living thing on it. */
-  .leaflet-tile-pane { filter: grayscale(1) brightness(0.62) contrast(1.15); }
-  .leaflet-labels-pane, .leaflet-pane[style*="450"] { opacity: 0.55; }
-  /* Soft bioluminescent bloom on the canvas (states, counties, lines). */
-  .leaflet-overlay-pane canvas { filter: drop-shadow(0 0 1.2px rgba(241, 236, 220, 0.45)) drop-shadow(0 0 5px rgba(241, 236, 220, 0.12)); }
-  .plant-icon path { stroke: #000; stroke-width: 1px; }
-  .plant-icon svg { filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.9)); }
-  .plant-icon .t-nuclear { filter: drop-shadow(0 0 6px rgba(201, 242, 74, 0.55)); }
-  body::after { content: ""; position: fixed; inset: 0; z-index: 500; pointer-events: none;
-    background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.55) 100%); }
-  .leaflet-control-attribution { opacity: 0.7; }
-  .sat-card { position: fixed; z-index: 1200; width: 300px; pointer-events: none; background: var(--surface-solid); border: 1px solid var(--border);
-    border-radius: 2px; box-shadow: var(--shadow); opacity: 0; transform: translateY(4px); transition: opacity 0.15s, transform 0.15s; }
-  .sat-card.show { opacity: 1; transform: none; }
-  .sat-card img, .pop .sat { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; background: #111; filter: grayscale(0.35) contrast(1.05); }
-  .sat-card figcaption { padding: 6px 9px; font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
-  .sat-card figcaption b { color: var(--text); font-weight: 500; }
-  .pop .sat { margin: -2px 0 10px; }
-  .leaflet-satpatch-pane { filter: grayscale(0.45) contrast(1.08) brightness(0.9); }
-  .outside-fade { filter: blur(10px); }
-
-  /* ---------- Light mode: ink on bone paper ---------- */
-  :root[data-theme="light"] {
-    --bg: #f4f4f4; --surface: rgba(241, 238, 229, 0.9); --surface-solid: #f3f0e8; --surface-hover: #e3ded1;
-    --text: #1b1a17; --muted: #6a6559; --border: rgba(27, 26, 23, 0.15); --shadow: 0 18px 50px rgba(50, 42, 25, 0.18);
-    --tva: #6a6559; --tn: #1b1a17; --frontier: #4a7a00; --colossus: #b23f17; --line: #6a6559; --focus: #1b1a17;
-    --v500: #141310; --v230: #2d2b25; --v161: #4a4a4a; --vlow: #7a7567; --vna: #9a9586;
-    --g-nuclear: #4a7a00; --g-coal: #3d3934; --g-gas: #a4542b; --g-hydro: #4b6c74; --g-solar: #977f2f; --g-other: #7a766c;
-    --seq1: #ebe7dc; --seq2: #c9c2b0; --seq3: #9c9480; --seq4: #6b6556; --seq5: #3a362e;
-    --warn: #a06a00; --crit: #b23f17;
-    color-scheme: light;
-  }
-  :root[data-theme="light"] .leaflet-tile-pane { filter: grayscale(1) brightness(1.04) contrast(0.92); }
-  :root[data-theme="light"] .leaflet-labels-pane { opacity: 0.7; }
-  :root[data-theme="light"] .leaflet-overlay-pane canvas { filter: drop-shadow(0 0 0.8px rgba(20, 19, 16, 0.3)); }
-  :root[data-theme="light"] .plant-icon path { stroke: #f3f0e8; }
-  :root[data-theme="light"] .plant-icon svg { filter: drop-shadow(0 1px 2px rgba(40, 32, 15, 0.35)); }
-  :root[data-theme="light"] .plant-icon .t-nuclear { filter: drop-shadow(0 0 4px rgba(74, 122, 0, 0.45)); }
-  :root[data-theme="light"] .leaflet-satpatch-pane { filter: grayscale(0.55) contrast(0.98) brightness(1.03); }
-  :root[data-theme="light"] body::after { background: radial-gradient(ellipse at 50% 45%, transparent 60%, rgba(70, 58, 35, 0.2) 100%); }
-  .theme-btn { position: absolute; top: 14px; right: 14px; width: 28px; height: 28px; display: grid; place-items: center; padding: 0;
-    color: var(--muted); background: transparent; border: 1px solid var(--border); border-radius: 2px; cursor: pointer; }
-  .theme-btn:hover { color: var(--text); background: var(--surface-hover); }
-  .theme-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.6; }
-  .panel { position: fixed; }
-  .panel h1, .panel .eyebrow { padding-right: 34px; }
-
-  /* =====================================================================
-     PAPER SKIN — the explorer in the story's language (default theme).
-     Ink hairlines and mono labels; soft color only where data lives.
-     ===================================================================== */
-  :root[data-theme="light"] {
-    --bg: #ffffff; --surface: rgba(255, 255, 255, 0.94); --surface-solid: #ffffff; --surface-hover: #f0f0f0;
-    --text: #141414; --muted: #8c8c8c; --ink-2: #4a4a4a; --border: rgba(20, 20, 20, 0.14); --shadow: 0 10px 34px rgba(20, 20, 20, 0.12);
-    --tva: #141414; --tn: #8c8c8c; --frontier: #3d8be0; --colossus: #f08458; --line: #4a4a4a; --focus: #141414;
-    --v500: #141414; --v230: #333333; --v161: #555555; --vlow: #8c8c8c; --vna: #adadad;
-    --g-nuclear: #3d8be0; --g-coal: #4a4a4a; --g-gas: #e07a4e; --g-hydro: #7aa6c9; --g-solar: #c9a94a; --g-other: #adadad;
-    --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  }
-  :root[data-theme="light"] body { font-family: var(--font); }
-  :root[data-theme="light"] .leaflet-container { font-family: var(--mono); }
-
-  /* map: ash-paper basemap, faint survey grid, no bloom */
-  :root[data-theme="light"] .leaflet-tile-pane { filter: grayscale(1) contrast(0.88) brightness(1.03); opacity: 0.85; }
-  :root[data-theme="light"] .leaflet-labels-pane { opacity: 0.45; }
-  :root[data-theme="light"] .leaflet-overlay-pane canvas { filter: none; }
-  :root[data-theme="light"] .leaflet-satpatch-pane { filter: grayscale(0.4) contrast(0.95); }
-  :root[data-theme="light"] #map::after { content: ""; position: absolute; inset: 0; z-index: 450; pointer-events: none;
-    background-image: linear-gradient(rgba(20, 20, 20,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(20, 20, 20,0.045) 1px, transparent 1px);
-    background-size: 28px 28px; }
-  :root[data-theme="light"] body::after { background: none; }
-
-  /* sidebar: full height, hairline edge, editorial rhythm */
-  :root[data-theme="light"] .panel {
-    top: 0; left: 0; bottom: 0; width: 360px; max-height: none; padding: 30px 28px 140px;
-    background: var(--bg); border: 0; border-right: 1px solid var(--border); border-radius: 0; box-shadow: none;
-    backdrop-filter: none; -webkit-backdrop-filter: none;
-  }
-  :root[data-theme="light"] .eyebrow { font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 22px; }
-  :root[data-theme="light"] .eyebrow a { color: var(--text); text-decoration: none; border-bottom: 1px solid var(--text); }
-  :root[data-theme="light"] h1 { font-family: var(--font); text-transform: none; font-size: 40px; line-height: 0.95; font-weight: 500; letter-spacing: -0.035em; margin: 0 0 14px; }
-  :root[data-theme="light"] .lede { font-size: 14.5px; line-height: 1.55; color: var(--ink-2); margin-bottom: 22px; }
-  :root[data-theme="light"] .theme-btn { top: 26px; right: 24px; border-radius: 0; }
-
-  :root[data-theme="light"] .sites { gap: 0; border-top: 1px solid var(--border); }
-  :root[data-theme="light"] .site { grid-template-columns: 10px 1fr auto; padding: 13px 0; background: transparent; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; }
-  :root[data-theme="light"] .site:hover { background: transparent; }
-  :root[data-theme="light"] .site:hover .site-name { text-decoration: underline; text-underline-offset: 3px; }
-  :root[data-theme="light"] .site[aria-pressed="true"] { box-shadow: none; background: linear-gradient(90deg, rgba(86, 168, 255, 0.10), transparent); }
-  :root[data-theme="light"] .swatch { width: 10px; height: 10px; border-radius: 0; box-shadow: none; border: 1px solid var(--text); }
-  :root[data-theme="light"] .site-name { font-weight: 500; letter-spacing: -0.01em; }
-  :root[data-theme="light"] .site-meta { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.03em; }
-
-  :root[data-theme="light"] .signals { border-top: 0; padding-top: 18px; gap: 12px; }
-  :root[data-theme="light"] .signals b { font-size: 17px; }
-  :root[data-theme="light"] .signals .up { color: var(--frontier); }
-  :root[data-theme="light"] .signals .down { color: var(--colossus); }
-
-  :root[data-theme="light"] .actions { gap: 22px; margin-top: 4px; }
-  :root[data-theme="light"] .btn { flex: none; padding: 3px 0; font-family: var(--mono); font-size: 10.5px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase;
-    background: transparent; border: 0; border-bottom: 1px solid var(--text); border-radius: 0; }
-  :root[data-theme="light"] .btn:hover { background: transparent; color: var(--frontier); border-color: var(--frontier); }
-
-  :root[data-theme="light"] .more { margin-top: 26px; border-top: 1px solid var(--text); padding-top: 12px; }
-  :root[data-theme="light"] .more summary { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); }
-  :root[data-theme="light"] .layer-group { border-top: 1px solid var(--border); padding-top: 14px; margin-top: 14px; }
-  :root[data-theme="light"] .layer-toggle { font-weight: 500; letter-spacing: 0; }
-  :root[data-theme="light"] .layer-toggle .hint, :root[data-theme="light"] .layer-head { font-family: var(--mono); font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
-  :root[data-theme="light"] .layer-group input { accent-color: var(--text); border-radius: 0; }
-  :root[data-theme="light"] .field select, :root[data-theme="light"] .sub-select { background: transparent; border: 0; border-bottom: 1px solid var(--text); border-radius: 0; padding: 4px 0; font-family: var(--mono); font-size: 11.5px; }
-  :root[data-theme="light"] .key, :root[data-theme="light"] .seq-legend span, :root[data-theme="light"] .sub-legend i { border-radius: 0; }
-
-  /* timeline bar: a ruled strip, not a card */
-  :root[data-theme="light"] .timeline { left: 360px; right: 0; bottom: 0; max-width: none; margin: 0; border: 0; border-top: 1px solid var(--border);
-    border-radius: 0; box-shadow: none; background: rgba(255, 255, 255, 0.94); backdrop-filter: none; padding: 12px 22px 10px; }
-  :root[data-theme="light"] .tl-year { color: var(--text); }
-  :root[data-theme="light"] .tl-play { border-radius: 0; border-color: var(--text); }
-  :root[data-theme="light"] #tl-range::-webkit-slider-thumb { border-radius: 0; background: var(--bg); border: 1.5px solid var(--text); }
-  :root[data-theme="light"] #tl-range::-moz-range-thumb { border-radius: 0; background: var(--bg); border: 1.5px solid var(--text); }
-  :root[data-theme="light"] #tl-range::-webkit-slider-runnable-track { height: 1px; background: var(--text); }
-
-  /* pins, labels, popups: square nodes, mono tags, ruled cards */
-  :root[data-theme="light"] .pin .dot { border-radius: 0; width: 12px; height: 12px; border: 1.5px solid var(--text); box-shadow: none; }
-  :root[data-theme="light"] .pin .ring { border-radius: 50%; filter: blur(6px); opacity: 0.45; }
-  :root[data-theme="light"] .leaflet-tooltip.site-label, :root[data-theme="light"] .leaflet-tooltip.plant-tip, :root[data-theme="light"] .leaflet-tooltip.xai-label {
-    border-radius: 0; box-shadow: none; border: 0; background: rgba(255, 255, 255, 0.86); font-family: var(--mono); font-size: 10.5px; font-weight: 500;
-    letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 5px; }
-  :root[data-theme="light"] .leaflet-popup-content-wrapper { border-radius: 0; box-shadow: var(--shadow); }
-  :root[data-theme="light"] .leaflet-popup-tip { box-shadow: none; }
-  :root[data-theme="light"] .leaflet-popup-content { font-family: var(--font); }
-  :root[data-theme="light"] .pop h2 { font-family: var(--font); font-weight: 500; letter-spacing: -0.02em; }
-  :root[data-theme="light"] .pop h2::before { border-radius: 0; }
-  :root[data-theme="light"] .pop .sub, :root[data-theme="light"] .pop dt { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.03em; }
-  :root[data-theme="light"] .sat-card { border-radius: 0; }
-  :root[data-theme="light"] .leaflet-bar a { border-radius: 0 !important; background: var(--bg); }
-  :root[data-theme="light"] .plant-icon svg { filter: none; }
-  :root[data-theme="light"] .plant-icon path { stroke: var(--bg); stroke-width: 1.2px; }
-
-  @media (max-width: 640px) {
-    :root[data-theme="light"] .panel { bottom: auto; width: auto; right: 0; max-height: 55%; padding: 18px 18px 14px; border-right: 0; border-bottom: 1px solid var(--border); }
-    :root[data-theme="light"] h1 { font-size: 28px; }
-    :root[data-theme="light"] .timeline { left: 0; }
-  }
-  @media (min-width: 641px) and (max-width: 900px) {
-    :root[data-theme="light"] .panel { max-height: none; }
-    :root[data-theme="light"] .timeline { left: 360px; }
-  }
-
-  /* ---------- records: reader-contributed testimony and observations ---------- */
-  :root { --tool: var(--text); }
-  .records { margin-top: 26px; padding-top: 12px; border-top: 4px solid var(--tool); }
-  .rec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-  .rec-head h2 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
-  .rec-add { font-family: var(--mono); font-size: 12px; padding: 3px 10px; color: var(--tool); background: transparent; border: 1.5px solid var(--tool); border-radius: 0; cursor: pointer; }
-  .rec-add:hover, .rec-add[aria-pressed="true"] { background: var(--tool); color: var(--bg); }
-  .rec-note { margin: 8px 0 10px; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
-  .rec-list { list-style: none; margin: 0 0 10px; padding: 0; }
-  .rec-list li { display: grid; grid-template-columns: 14px 1fr; gap: 2px 10px; padding: 8px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
-  .rec-list li:hover b { text-decoration: underline; }
-  .rec-list i { grid-row: span 2; width: 10px; height: 10px; margin-top: 4px; border: 1.5px solid var(--tool); }
-  .rec-list b { font-weight: 500; font-size: 13.5px; }
-  .rec-list span { font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
-  .rec-banner { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 1100; padding: 8px 14px; font-family: var(--mono); font-size: 12px;
-    color: var(--bg); background: var(--tool); }
-  body.placing #map, body.placing #map .leaflet-interactive { cursor: crosshair !important; }
-  .rec-icon { background: none; border: 0; }
-  .rec-icon span { display: grid; place-items: center; width: 20px; height: 20px; background: var(--surface-solid); border: 1.5px solid var(--tool); color: var(--tool);
-    font-family: Georgia, serif; font-size: 16px; padding-top: 5px; box-shadow: 0 0 0 4px rgba(20, 20, 20, 0.14); }
-  .rec-form { display: grid; gap: 7px; width: 250px; font-family: var(--font); }
-  .rec-form b.rec-form-title { font-size: 15px; font-weight: 600; }
-  .rec-form label { display: grid; gap: 3px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
-  .rec-form input, .rec-form select, .rec-form textarea { font: 13px var(--font); color: var(--text); background: transparent; border: 0; border-bottom: 1px solid var(--text); border-radius: 0; padding: 4px 0; }
-  .rec-form textarea { min-height: 70px; resize: vertical; border: 1px solid var(--border); padding: 6px; }
-  .rec-form .rec-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .rec-form .rec-actions { display: flex; gap: 14px; margin-top: 4px; }
-  .rec-form button { font-family: var(--mono); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; padding: 4px 10px; border-radius: 0; cursor: pointer;
-    border: 1.5px solid var(--tool); background: var(--tool); color: var(--bg); }
-  .rec-form button.ghost { background: transparent; color: var(--text); border-color: var(--border); }
-  .rec-pop .t-kicker { margin: 0 0 6px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--tool); }
-  .rec-pop blockquote { margin: 0 0 8px; font-size: 14.5px; line-height: 1.45; }
-  .rec-pop p { margin: 0; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
-  .rec-exports { display: flex; flex-wrap: wrap; gap: 8px; }
-  .rec-form .rec-check { display: flex; gap: 8px; align-items: flex-start; text-transform: none; letter-spacing: 0; font-family: var(--font); font-size: 12px; }
-  .rec-form .rec-check input { width: auto; margin-top: 2px; }
-
-  /* ---------- Provenance chips: what kind of claim, from what kind of source ---------- */
-  .prov { display: flex; flex-wrap: wrap; gap: 4px 6px; margin: 6px 0 2px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.03em; text-transform: uppercase; }
-  .prov b, .prov i { font-weight: 500; font-style: normal; padding: 1px 5px; border: 1px solid var(--border); color: var(--muted); }
-  .prov .st { color: var(--text); border-color: var(--text); }
-  .prov .st--alleged, .prov .st--filed_allegation { color: var(--warn); border-color: var(--warn); }
-  .prov .st--ruled, .prov .st--permitted, .prov .st--approved { color: var(--text); border-style: solid; }
-  .prov .xr-excerpt { border-style: dashed; }
-  .prov a { color: var(--focus); text-decoration: none; padding: 1px 0; }
-  .state-pop .prov span, .pop .prov span { display: inline; }
-  .sub-note { margin: 6px 0 8px; font-size: 12px; line-height: 1.45; color: var(--muted); }
-  .sub-note a { color: var(--focus); }
-  .sub-legend .wide { flex-basis: 100%; }
-
-  /* ---------- The xAI record: date slider, counts readout, decisions list ---------- */
-  .xr-time { display: grid; gap: 4px; margin: 6px 0 4px; }
-  .xr-date { font-family: var(--mono); font-size: 13px; }
-  .xr-time input { width: 100%; accent-color: var(--colossus); }
-  .xr-readout { margin: 4px 0 0; font-size: 12.5px; line-height: 1.5; }
-  .xr-readout b { font-weight: 600; }
-  .xr-readout span { display: block; color: var(--muted); font-size: 11.5px; }
-  .xr-juris { margin-top: 6px; }
-  .xr-list, .about-list { list-style: none; margin: 8px 0 0; padding: 0; max-height: 300px; overflow-y: auto; }
-  .xr-list li, .about-list li { padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 12.5px; line-height: 1.4; }
-  .xr-list li { cursor: pointer; }
-  .xr-list li:hover .xr-what { text-decoration: underline; }
-  .xr-list time, .about-list .ab-id { display: block; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
-  .about-list li span { display: block; color: var(--muted); font-size: 11.5px; }
-  .about-list a { color: var(--focus); }
-  .count-icon span { display: inline-block; padding: 2px 6px; font: 600 12px var(--mono); white-space: nowrap; color: var(--bg); background: var(--colossus); border: 1px solid var(--bg); }
-  .count-icon span.alleged { background: var(--warn); }
-  .dec-icon span { display: grid; place-items: center; width: 20px; height: 20px; font: 600 11px var(--mono); color: var(--text); background: var(--surface-solid); border: 1.5px solid var(--text); }
-  .ash-icon span, .well-icon span { display: block; width: 12px; height: 12px; background: var(--muted); border: 1.5px solid var(--text); }
-  .well-icon span { width: 9px; height: 9px; border-radius: 50%; background: var(--g-hydro); }
-  .c3-icon span { display: block; width: 14px; height: 14px; border: 2px dashed var(--colossus); border-radius: 50%; }
-  .rec-pop button { margin-top: 8px; font-family: var(--mono); font-size: 10px; text-transform: uppercase; background: none; border: 0; border-bottom: 1px solid var(--muted); color: var(--muted); cursor: pointer; padding: 0; }
-
-  /* ---------- map tool: actions, source lines ---------- */
-  .tool-actions { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 0 0 14px; }
-  .btn-primary { padding: 10px 12px; color: var(--bg); background: var(--text); border-color: var(--text); font-weight: 600; }
-  .btn-primary:hover { background: var(--text); opacity: 0.88; }
-  :root[data-theme="light"] .tool-actions .btn { padding: 9px 12px; text-align: center; border: 1px solid var(--text); }
-  :root[data-theme="light"] .tool-actions .btn-primary { color: var(--bg); background: var(--text); }
-  :root[data-theme="light"] .tool-actions .btn-primary:hover { color: var(--bg); opacity: 0.85; }
-  .src { margin: 6px 0 0 24px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.03em; line-height: 1.45; color: var(--muted); }
-  .layer-group .src + .layer-toggle { margin-top: 12px; }
-  .key-dc { width: 10px; height: 10px; border-radius: 0; background: var(--colossus); border: 1.5px solid var(--text); }
-  .key-xlink { height: 0; border-radius: 0; border-top: 2px dotted var(--colossus); }
-  .rec-show { margin: 10px 0 0; font-size: 13px; }
-  .rec-show input { width: 14px; height: 14px; margin: 0; accent-color: var(--text); }
-  .copied { position: fixed; left: 50%; bottom: 120px; transform: translateX(-50%); z-index: 1300; padding: 8px 14px; font: 12px var(--mono); color: var(--bg); background: var(--text); }
-
-
-
-  /* ---------- tract layers and score ---------- */
-  .ty { margin: 6px 0 10px; }
-  .ty label { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
-  .ty output { color: var(--text); font-size: 15px; }
-  .ty input { width: 100%; accent-color: var(--text); }
-  .ty-axis { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 9.5px; color: var(--muted); }
-  .views { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 6px; }
-  .vbtn { font: 12px var(--font); padding: 4px 8px; color: var(--text); background: transparent; border: 1px solid var(--border); border-radius: 0; cursor: pointer; }
-  .vbtn:hover { border-color: var(--text); }
-  .vbtn[aria-pressed="true"] { color: var(--bg); background: var(--text); border-color: var(--text); }
-  .tract-legend .tl-sw { display: flex; flex-wrap: wrap; gap: 4px 10px; margin: 4px 0; font: 10.5px var(--mono); color: var(--muted); }
-  .tract-legend i { display: inline-block; width: 14px; height: 10px; margin-right: 4px; vertical-align: -1px; border: 1px solid rgba(0,0,0,0.15); }
-  .i-hatch { background: repeating-linear-gradient(45deg, #fff 0 2px, #9a9a9a 2px 3px); }
-  .i-empty { background: radial-gradient(circle, #9a9a9a 1px, #e8e8e8 1.2px) 0 0 / 5px 5px; }
-  .wt { display: grid; grid-template-columns: 1fr 90px 26px; align-items: center; gap: 6px; margin: 3px 0; font-size: 12.5px; }
-  .wt input { width: 100%; accent-color: var(--text); }
-  .wt output { font: 11px var(--mono); text-align: right; }
-  .wt-gap { margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--border); }
-  .tr-pop h3 { margin: 0; font-size: 15px; font-weight: 600; }
-  .tr-sub, .tr-ctx { margin: 2px 0 6px; font: 10.5px var(--mono); color: var(--muted); }
-  .tr-score { margin: 6px 0; } .tr-score b { font: 500 26px var(--mono); margin-right: 6px; } .tr-score span { display: block; font-size: 11px; color: var(--muted); }
-  .tr-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
-  .tr-table th, .tr-table td { text-align: left; padding: 3px 6px 3px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
-  .tr-table td:nth-child(2) { font-family: var(--mono); width: 32px; }
-  .tr-table td span { display: block; font-size: 10px; color: var(--muted); }
-  .tr-cat th, .tr-cat td { padding-top: 7px; font-weight: 600; border-bottom: 1px solid var(--text); }
-  .tr-gap { font-style: normal; color: var(--warn); }
-  .lgi { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 3px; margin-right: 2px; font: 700 11px var(--mono); color: #fff; border: 1.5px solid var(--bg); box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
-  .lgi b { margin-left: 2px; font-weight: 500; }
-  .lgi--inj { background: #b3261e; border-radius: 3px; }
-  .lgi--case { background: #141414; border-radius: 50%; }
-  .lgi--permit { background: #6a6a6a; }
-  .lg-cluster { display: flex; white-space: nowrap; background: none !important; border: 0 !important; width: auto !important; height: auto !important; }
-  .lg-cluster span.lgi { width: auto; }
-  .lg-key .lgi { flex: none; }
-  .mon { display: block; width: 12px; height: 12px; transform: rotate(45deg); border: 1.5px solid #141414; }
-  .mon--ok { background: #2f6f4f; } .mon--part { background: #e0b341; } .mon--none { background: #fff; border-style: dashed; }
-  .sub-legend .mon { display: inline-block; width: 9px; height: 9px; margin-right: 6px; }
-  .mon-icon, .sub-icon, .sch-icon { background: none; border: 0; }
-  .sub-icon span { display: block; width: 9px; height: 9px; background: #fff; border: 2px solid #4a4a4a; }
-  .sch-icon span { display: block; width: 9px; height: 9px; border-radius: 50%; background: #3d6fb4; border: 1.5px solid #fff; box-shadow: 0 0 0 1px #3d6fb4; }
-
-  /* ---------- extra legend keys ---------- */
-  .key-county { height: 0; border-radius: 0; border-top: 2px dashed var(--text); }
-  .key-city { height: 0; border-radius: 0; border-top: 1.5px dotted var(--text); }
-  .key-sat { background: linear-gradient(135deg, #6f7a5a, #a59a7a); border-radius: 50%; }
-
-  /* ---------- export mode: a true-size print sheet beside its settings ---------- */
-  .export { position: fixed; top: var(--nav-h); left: 0; right: 0; bottom: 0; z-index: 1050; display: grid; grid-template-columns: 320px 1fr; background: var(--bg); }
-  .export[hidden] { display: none; }
-  body.exporting .panel, body.exporting .timeline, body.exporting .sat-card, body.exporting .rec-banner { display: none !important; }
-  body.exporting::after { display: none; }
-  .export-panel { overflow-y: auto; padding: 26px 24px 40px; border-right: 1px solid var(--border); background: var(--bg); }
-  .export-panel h2 { margin: 0 0 8px; font-size: 24px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.1; }
-  .xf { display: grid; gap: 4px; margin: 14px 0 0; font-family: var(--mono); font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
-  .xf input, .xf textarea, .xf select { font: 14px var(--font); color: var(--text); background: transparent; border: 0; border-bottom: 1px solid var(--text); border-radius: 0; padding: 5px 0; text-transform: none; letter-spacing: 0; }
-  .xf textarea { min-height: 96px; resize: vertical; border: 1px solid var(--border); padding: 6px; }
-  .xf-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .export-panel .btn { display: block; width: 100%; margin-top: 18px; padding: 10px 12px; text-align: center; border: 1px solid var(--text) !important; }
-  .export-panel .btn-primary { color: var(--bg) !important; background: var(--text) !important; }
-  .export-panel .btn-primary:disabled { opacity: 0.4; cursor: wait; }
-  .export-stage { overflow: auto; padding: 28px; background: #e4e4e4; }
-  .sheet { --pw: 11in; --ph: 8.5in; --m: 0.45in; width: max-content; margin: 0 auto; color: #141414; font-family: "Inter", system-ui, sans-serif; }
-  .sheet * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .frame { padding: var(--m); margin: 0 0 24px; background: #fff; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.14); }
-  .page { width: calc(var(--pw) - 2 * var(--m)); }
-  .page-1 { height: calc(var(--ph) - 2 * var(--m) - 0.06in); overflow: hidden; display: grid; grid-template-rows: auto 1fr auto; gap: 0.12in; }
-  .page-2 { min-height: calc(var(--ph) - 2 * var(--m) - 0.06in); }
-  .sh-head { border-bottom: 1.5px solid #141414; padding-bottom: 0.08in; }
-  .sh-kicker { margin: 0; font: 500 7.5pt var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: #6a6a6a; }
-  .sheet h1 { margin: 2pt 0 2pt; font: 500 19pt "Inter", sans-serif; letter-spacing: -0.02em; text-transform: none; }
-  .sh-meta { margin: 0; font: 7.5pt var(--mono); color: #4a4a4a; }
-  .sh-body { min-height: 0; display: grid; grid-template-columns: 1fr 2.5in; gap: 0.16in; }
-  .sheet[data-orient="portrait"] .sh-body { grid-template-columns: 1fr; grid-template-rows: 1fr minmax(0, 2.9in); }
-  .sheet[data-orient="portrait"] #sh-legend { columns: 2; column-gap: 0.2in; }
-  .sh-map { position: relative; min-height: 0; overflow: hidden; border: 1px solid #141414; }
-  #map.leaflet-container { }
-  .sh-map #map { position: absolute; inset: 0; top: 0; }
-  .sh-side { min-height: 0; overflow: hidden; font-size: 7.5pt; line-height: 1.3; }
-  .sheet h3 { margin: 0 0 4pt; font: 500 7.5pt var(--mono); letter-spacing: 0.06em; text-transform: uppercase; }
-  .lg { break-inside: avoid; margin: 0 0 6pt; }
-  .lg h4 { margin: 0 0 2pt; font-size: 8pt; font-weight: 600; }
-  .lg h4 small { font: 7pt var(--mono); color: #6a6a6a; font-weight: 400; }
-  .lg ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2pt; }
-  .lg li { display: grid; grid-template-columns: 18px 1fr; align-items: center; gap: 5px; }
-  .lg li em { font-style: normal; font: 6.5pt var(--mono); color: #6a6a6a; }
-  .lg li.sh-seq, .lg li.sh-noise { display: block; }
-  .lg li.lg-note { display: block; color: #4a4a4a; }
-  body.exporting .leaflet-control-attribution { display: none; }
-  .lg .seq-legend { margin: 0; font-size: 6.5pt; }
-  .lg .sub-legend { margin: 0; gap: 2pt 8pt; font-size: 6.5pt; color: #4a4a4a; }
-  .lg .count-icon span, .lg .dec-icon span { font-size: 8px; padding: 0 3px; width: auto; height: auto; }
-  .lg .key { width: 16px; }
-  .sheet.dense .sh-side { font-size: 6.5pt; }
-  .sheet.dense .lg { margin-bottom: 3pt; }
-  .sheet.dense .lg h4 { font-size: 7pt; }
-  .sheet.wide .sh-body { grid-template-columns: 1fr 4in; }
-  .sheet.wide #sh-legend { columns: 2; column-gap: 0.18in; }
-  .sheet.wide[data-orient="portrait"] .sh-body { grid-template-columns: 1fr; grid-template-rows: 1fr minmax(0, 4in); }
-  .sheet.wide[data-orient="portrait"] #sh-legend { columns: 3; }
-  .sh-see2, .sh-legend2 { display: none; }
-  .sheet.legend-p2 #sh-legend { display: none; }
-  .sheet.legend-p2 .sh-see2, .sheet.legend-p2 .sh-legend2 { display: block; }
-  .sh-legend2 { margin-bottom: 12pt; font-size: 8pt; } .sh-legend2 #sh-legend2 { columns: 3; column-gap: 0.25in; }
-  .sh-notes { margin-top: 8pt; padding-top: 6pt; border-top: 1px solid #d0d0d0; }
-  .sh-notes p { margin: 0; white-space: pre-wrap; font-size: 8pt; }
-  .sh-foot { display: grid; grid-template-columns: auto 1fr; gap: 0.14in; align-items: start; padding-top: 0.08in; border-top: 1px solid #d0d0d0; font-size: 6.8pt; line-height: 1.35; color: #4a4a4a; }
-  .sh-qr img, .sh-qr canvas { display: block; width: 0.78in !important; height: 0.78in !important; }
-  .sh-link span { display: block; }
-  .sh-link a { color: #141414; word-break: break-all; font-family: var(--mono); font-size: 6.3pt; }
-  .sh-attr { margin-top: 2pt; color: #6a6a6a; }
-  .page-2 h2 { margin: 0 0 6pt; font: 500 13pt "Inter", sans-serif; }
-  .page-2 h3 { margin-top: 12pt; break-after: avoid; }
-  .page-2 h3 + p, .page-2 h3 + table, .page-2 h3 + ol { break-before: avoid; }
-  .sh-cite { width: 100%; border-collapse: collapse; font-size: 7.5pt; line-height: 1.3; }
-  .sh-cite th { text-align: left; font: 500 6.5pt var(--mono); letter-spacing: 0.05em; text-transform: uppercase; color: #6a6a6a; border-bottom: 1px solid #141414; padding: 3pt 6pt 3pt 0; }
-  .sh-cite td { vertical-align: top; padding: 4pt 6pt 4pt 0; border-bottom: 1px solid #e0e0e0; }
-  .sh-cite tr { break-inside: avoid; }
-  .sh-cite tr.sh-cat td { padding-top: 8pt; border-bottom: 1px solid #141414; }
-  .sh-cite td span { display: block; color: #6a6a6a; }
-  .sh-cite td a { display: block; color: #141414; font: 6.3pt var(--mono); word-break: break-all; }
-  .sh-st { display: inline-block !important; margin-top: 2pt; padding: 0 3pt; border: 1px solid #141414; color: #141414 !important; font: 6.3pt var(--mono); text-transform: uppercase; }
-  .sh-st.st--alleged, .sh-st.st--filed_allegation { color: #a06a00 !important; border-color: #a06a00; }
-  .sh-small { margin: 4pt 0; font-size: 7pt; line-height: 1.4; color: #4a4a4a; }
-  .sh-list { list-style: none; margin: 0; padding: 0; font-size: 7.5pt; line-height: 1.35; }
-  .sh-list li { padding: 3pt 0; border-bottom: 1px solid #e0e0e0; break-inside: avoid; }
-  .sh-list time { display: block; font: 6.5pt var(--mono); color: #6a6a6a; }
-  .sh-prov { margin: 2pt 0 0; font: 6.3pt var(--mono); color: #6a6a6a; }
-  .sh-prov a { display: block; color: #141414; word-break: break-all; }
-  .sh-prov .sh-st { margin: 0 2pt 0 0; }
-  body.exporting .leaflet-control-scale-line { font: 9px var(--mono); background: rgba(255, 255, 255, 0.85); border-color: #141414; }
-
-  @media print {
-    html, body { height: auto !important; background: #fff !important; }
-    body.exporting > *:not(.export) { display: none !important; }
-    body.exporting .export { position: static; display: block; background: none; }
-    .export-panel { display: none !important; }
-    .export-stage { overflow: visible; padding: 0; background: none; }
-    .sheet { margin: 0; }
-    .frame { padding: 0; margin: 0; box-shadow: none; }
-    .frame + .frame { break-before: page; }
-    .leaflet-control-zoom { display: none !important; }
-  }
-
-  /* ---------- site nav offsets (nav.css) ---------- */
-  #map { top: var(--nav-h); }
-  .panel { top: calc(var(--nav-h) + 16px); max-height: calc(100% - var(--nav-h) - 32px); }
-  :root[data-theme="light"] .panel { top: var(--nav-h); }
-</style>
+<link rel="stylesheet" href="ui.css?v=2026-11-17b">
+<link rel="stylesheet" href="explore.css?v=2026-11-12a">
 </head>
-<body>
+<body data-sheet="peek">
+<a class="skip-link" href="#panel">Skip to map controls</a>
 <nav class="site-nav" aria-label="Site">
   <a class="brand" href="./">The Counter Map</a>
   <ul>
@@ -764,252 +22,305 @@
     <li><a href="explore.html" aria-current="page">Map</a></li>
   </ul>
 </nav>
-<div id="map" aria-label="Map of the eastern United States"></div>
+<main id="map" aria-label="Map of the TVA area and the xAI sites"></main>
 
-<aside class="panel" aria-label="Map layers and export">
-  <button class="theme-btn" type="button" id="theme-btn" aria-label="Switch to light mode"></button>
-  <p class="eyebrow">Map tool · TVA service area &amp; xAI Colossus</p>
-  <h1>The Counter Map</h1>
-  <p class="lede">Turn layers on and off, frame the view, then export a PDF that lists the source of every layer shown. Allegations are labeled as allegations.</p>
+<aside class="panel" id="panel" aria-label="Map layers and tools">
+  <button class="sheet-handle" type="button" id="sheet-handle" aria-controls="panel-body" aria-expanded="false"><span id="sheet-handle-text">Layers</span></button>
+  <header class="panel-head">
+    <h1>Explore the map</h1>
+    <p class="lede">Power, pollution, health and legal records around xAI's data centers in Memphis and Southaven. Allegations are labeled as allegations.</p>
+    <div class="tool-actions">
+      <button class="btn btn-primary" type="button" id="export-open">Save as PDF</button>
+      <button class="btn" type="button" id="copy-link">Share this view</button>
+    </div>
+    <div class="goto" role="group" aria-label="Go to a place">
+      <button class="pill" type="button" id="zoom-xai">Memphis &amp; Southaven</button>
+      <button class="pill" type="button" id="reset">Whole TVA area</button>
+    </div>
+  </header>
 
-  <div class="tool-actions">
-    <button class="btn btn-primary" type="button" id="export-open">Export PDF</button>
-    <button class="btn" type="button" id="copy-link">Copy link to this view</button>
+  <div class="tabs" role="tablist" aria-label="Map tool sections">
+    <button class="tab" type="button" role="tab" id="tab-layers" aria-controls="tp-layers" aria-selected="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 8l10 5 10-5-10-5z"/><path d="m2 13 10 5 10-5"/></svg><span>Layers</span></button>
+    <button class="tab" type="button" role="tab" id="tab-community" aria-controls="tp-community" aria-selected="false" tabindex="-1">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v11h14V9"/><path d="M10 20v-6h4v6"/></svg><span>Community</span></button>
+    <button class="tab" type="button" role="tab" id="tab-legal" aria-controls="tp-legal" aria-selected="false" tabindex="-1">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/></svg><span>Legal</span></button>
+    <button class="tab" type="button" role="tab" id="tab-notes" aria-controls="tp-notes" aria-selected="false" tabindex="-1">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/></svg><span>Notes</span></button>
+    <button class="tab" type="button" role="tab" id="tab-sources" aria-controls="tp-sources" aria-selected="false" tabindex="-1">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.5v.01"/></svg><span>Sources</span></button>
   </div>
-  <div class="actions">
-    <button class="btn" type="button" id="zoom-xai">Memphis &amp; Southaven</button>
-    <button class="btn" type="button" id="reset">Whole TVA area</button>
-  </div>
 
-  <details class="more" id="g-score" open>
-    <summary>Injustice score</summary>
-    <p class="sub-note">One number per census tract and year for Shelby County, TN and DeSoto County, MS: health, income, noise, air, nearby infrastructure and legal activity, ranked against every tract in every year from 2019 to 2026. Race, authority and testimonies are not part of it. A screening index from public data, not a finding.</p>
-    <div class="ty">
-      <label for="tract-year">Tract year <output id="tract-year-out">2024</output></label>
-      <input type="range" id="tract-year" min="2019" max="2026" step="1" value="2024">
-      <div class="ty-axis"><span>2019</span><span>Colossus 1 · 2024</span><span>2026</span></div>
-    </div>
-    <label class="field">Tract layer shown
-      <select id="tract-view"><option value="score">Injustice score</option></select>
-    </label>
-    <div id="tract-legend" class="tract-legend"></div>
-    <p class="sub-note" id="tract-note"></p>
-    <div id="score-weights-wrap">
-      <p class="layer-head">Weights</p>
-      <div id="score-weights"></div>
-      <p class="src">Missing data is never filled in; it scores as the value above. Method: <a href="docs/injustice-score-method.md" target="_blank" rel="noopener">how the score is built</a></p>
-    </div>
-    <p class="src">Moving the tract year also moves the xAI record (below) to December of that year. The grid timeline at the bottom is separate.</p>
-  </details>
+  <div class="panel-body" id="panel-body">
 
-  <details class="more" id="g-health" open>
-    <summary>Health</summary>
-    <div class="layer-group">
-      <div class="views" data-views="asthma,cancer,copd,asthma_er,absenteeism"></div>
-      <p class="src">CDC PLACES (asthma, cancer, COPD; to 2023) · CDC Tracking Network (asthma ER visits, Shelby, 2015–19) · school chronic absenteeism (TN, MS; weak stand-in)</p>
-      <label class="layer-toggle"><input type="checkbox" id="toggle-schools">Schools <span class="hint">chronic absenteeism by year</span></label>
-      <p class="src">TN Dept. of Education; Mississippi Report Card · locations: NCES</p>
+  <!-- ============ LAYERS ============ -->
+  <section class="tp" role="tabpanel" id="tp-layers" aria-labelledby="tab-layers" tabindex="-1">
+    <div class="howto" id="howto" hidden>
+      <h2>How to use this map</h2>
+      <ol>
+        <li>Turn layers on and off with the switches below.</li>
+        <li>Move the <b>Power grid year</b> at the bottom of the map to go back in time.</li>
+        <li>Tap anything on the map to see what it is and where it comes from.</li>
+        <li>Use <b>Save as PDF</b> or <b>Share this view</b> to keep what you see.</li>
+      </ol>
+      <button class="btn" type="button" id="howto-close">Got it</button>
     </div>
-  </details>
 
-  <details class="more" id="g-race">
-    <summary>Race</summary>
-    <div class="layer-group">
-      <div class="views" data-views="black_pct"></div>
-      <p class="src">Census ACS 5-year · shown for context, never scored</p>
-    </div>
-  </details>
-
-  <details class="more" id="g-income">
-    <summary>Income</summary>
-    <div class="layer-group">
-      <div class="views" data-views="income,poverty"></div>
-      <p class="src">Census ACS 5-year · income in 2024 dollars · margins of error in tract details</p>
-    </div>
-    <div class="layer-group">
-      <label class="field">Counties across the TVA area, ACS 2020–2024
-        <select id="county-var">
-          <option value="">Off</option>
-          <option value="dens">Population density</option>
-          <option value="inc">Median household income</option>
-          <option value="pov">Poverty rate</option>
-        </select>
-      </label>
-      <div class="seq-legend" id="county-legend" hidden></div>
-      <p class="src">Census ACS 2020–2024, 5-year · Official · quintiles</p>
-    </div>
-    <div class="layer-group" id="bg-group">
-      <label class="field">Block groups near the xAI sites, ACS 2020–2024
-        <select id="bg-var">
-          <option value="">Off</option>
-          <option value="black_pct">Black residents (non-Hispanic), %</option>
-          <option value="inc">Median household income</option>
-          <option value="pov_pct">Poverty rate</option>
-        </select>
-      </label>
-      <div class="seq-legend" id="bg-legend" hidden></div>
-      <p class="sub-note" id="bg-note" hidden>Estimates with margins of error (click a block group). Homes near the Southaven plant were reported changing hands in Oct 2026, so these 2020–2024 figures may not describe who lives there now.</p>
-    </div>
-  </details>
-
-  <details class="more" id="g-noise">
-    <summary>Noise</summary>
-    <div class="layer-group">
-      <div class="views" data-views="noise"></div>
-      <p class="src">BTS transportation noise, 2020 (road, rail, air). Cannot show turbine or industrial noise.</p>
-    </div>
-    <div class="layer-group">
-      <label class="layer-toggle"><input type="checkbox" id="toggle-noise">Noise map tiles <span class="hint">road, rail, air · BTS 2022</span></label>
-      <div class="sub-legend" id="noise-legend" hidden>
-        <span><i style="background:#ffc107"></i>45</span><span><i style="background:#ff8000"></i>50</span><span><i style="background:#ff0000"></i>55</span>
-        <span><i style="background:#ff3399"></i>60</span><span><i style="background:#a300cc"></i>70</span><span><i style="background:#5200cc"></i>80</span>
-        <span><i style="background:#0000ff"></i>90+ dBA, 24-hour average</span>
-        <span class="wide">Modeled traffic noise. It does not include turbines or other industrial noise, and BTS says it is for trends, not for judging a location.</span>
+    <details class="more" id="g-infra" open>
+      <summary>Power and data centers<span class="on-count" hidden></span></summary>
+      <div class="layer-group" id="xai-group">
+        <label class="layer-toggle"><input type="checkbox" id="toggle-xai" checked><span class="lt-text">Turbines and xAI sites <span class="hint">Colossus 1 &amp; 2, Southaven</span></span></label>
+        <ul class="subgrid">
+          <li><span class="key key-dc"></span>Data center</li>
+          <li><svg class="shape" viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><path d="M10 1.5 L19 18 H1 Z" style="fill:var(--g-gas);stroke:var(--colossus);stroke-width:2.5px"/></svg>Off-grid gas turbines</li>
+          <li class="wide"><span class="key key-xlink"></span>Turbines → data center they power (schematic, not the cable route)</li>
+        </ul>
+        <p class="src">NAACP complaint, MDEQ, Mississippi Free Press · see each site</p>
       </div>
-  </details>
-
-  <details class="more" id="g-authority">
-    <summary>Authority</summary>
-    <div class="layer-group">
-      <label class="layer-toggle"><input type="checkbox" id="toggle-juris">Who has authority <span class="hint">city, county, state lines</span></label>
-      <p class="src">Census TIGERweb · Official</p>
-    </div>
-  </details>
-
-  <details class="more" id="g-air" open>
-    <summary>Air pollution</summary>
-    <div class="layer-group">
-      <div class="views" data-views="pm25_model,o3_model,monitor_gap"></div>
-      <p class="src">Modeled estimates end in 2022 (CDC/EPA); later years are shown as no data. Monitor gap: distance to the nearest working regulatory monitor.</p>
-      <label class="layer-toggle"><input type="checkbox" id="toggle-monitors">Regulatory monitors near Memphis <span class="hint">by tract year</span></label>
-      <div class="sub-legend" id="monitors-legend" hidden>
-        <span><i class="mon mon--ok"></i>Complete year</span><span><i class="mon mon--part"></i>Incomplete year</span><span><i class="mon mon--none"></i>Not measuring that year</span>
+      <div class="layer-group" id="plants-group">
+        <label class="layer-toggle"><input type="checkbox" id="toggle-plants" checked><span class="lt-text">Generation sites <span class="hint">Power plants, sized by capacity</span></span></label>
+        <ul class="subgrid types" id="plant-types"></ul>
+        <p class="src">EIA-860 generators, 2025 · Official · shown for the power grid year at the bottom</p>
       </div>
-      <p class="src">EPA AirData annual summaries · Official</p>
+      <div class="layer-group" id="lines-group">
+        <label class="layer-toggle"><input type="checkbox" id="toggle-lines" checked><span class="lt-text">Powerlines <span class="hint">Transmission, 69 kV and up</span></span></label>
+        <ul class="subgrid">
+          <li><span class="key key-v key-v500"></span>500 kV</li>
+          <li><span class="key key-v key-v230"></span>230 kV</li>
+          <li><span class="key key-v key-v161"></span>100–161 kV</li>
+          <li><span class="key key-v key-vlow"></span>69 kV and below</li>
+          <li><span class="key key-v key-vna"></span>Not listed</li>
+          <li class="wide"><span class="key key-v key-est"></span>Faded on the timeline: year estimated</li>
+        </ul>
+        <p class="src">HIFLD · Official · build years: OpenStreetMap, others estimated. Local distribution lines are not public.</p>
+      </div>
+      <div class="layer-group">
+        <label class="layer-toggle"><input type="checkbox" id="toggle-substations"><span class="lt-text">Substations <span class="hint">Memphis area, today</span></span></label>
+        <p class="src">OpenStreetMap contributors (ODbL) · present-day; most have no build date, so not scored</p>
+      </div>
+      <div class="layer-group">
+        <label class="layer-toggle"><input type="checkbox" id="toggle-tva" checked><span class="lt-text">TVA power service area <span class="hint">Outside the boundary is faded</span></span></label>
+        <ul class="subgrid"><li class="wide"><span class="key key-tva"></span>Service-area boundary</li></ul>
+        <p class="src">TVA_Power_Service_Area · Official · Dec 2016</p>
+      </div>
+    </details>
+
+    <details class="more" id="g-authority">
+      <summary>Authority<span class="on-count" hidden></span></summary>
+      <div class="layer-group">
+        <label class="layer-toggle"><input type="checkbox" id="toggle-juris"><span class="lt-text">Who has authority <span class="hint">City, county and state lines</span></span></label>
+        <p class="src">Census TIGERweb · Official</p>
+      </div>
+    </details>
+
+    <details class="more" id="g-env">
+      <summary>Other context<span class="on-count" hidden></span></summary>
+      <div class="layer-group">
+        <label class="layer-toggle"><input type="checkbox" id="toggle-ash"><span class="lt-text">Coal ash sites <span class="hint">Kingston, Allen</span></span></label>
+        <p class="src">EPA (Kingston), Mississippi Free Press (Allen)</p>
+        <label class="layer-toggle"><input type="checkbox" id="toggle-wells"><span class="lt-text">Memphis aquifer wells <span class="hint">USGS monitoring wells</span></span></label>
+        <p class="src">USGS National Water Information System · Official</p>
+        <label class="layer-toggle"><input type="checkbox" id="toggle-sat"><span class="lt-text">Satellite patches around generation <span class="hint">Photos around plants and xAI sites</span></span></label>
+        <p class="src">Esri World Imagery · around power plants and xAI sites</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ COMMUNITY ============ -->
+  <section class="tp" role="tabpanel" id="tp-community" aria-labelledby="tab-community" tabindex="-1" hidden>
+    <p class="tp-intro">Neighborhood data for Shelby County, TN and DeSoto County, MS, one census tract at a time. Pick a year, then pick what to color the neighborhoods by.</p>
+    <div class="card">
+      <div class="ty">
+        <label for="tract-year">Neighborhood data year <output id="tract-year-out">2024</output></label>
+        <input type="range" id="tract-year" min="2019" max="2026" step="1" value="2024">
+        <div class="ty-axis"><span>2019</span><span>Colossus 1 · 2024</span><span>2026</span></div>
+      </div>
+      <label class="field">Color neighborhoods by
+        <select id="tract-view"><option value="score">Injustice score</option></select>
+      </label>
+      <div id="tract-legend" class="tract-legend"></div>
+      <p class="sub-note" id="tract-note"></p>
+      <p class="src">Moving this year also moves the date in the Legal tab to December of that year. The power grid year at the bottom of the map is separate.</p>
     </div>
-    <div class="layer-group">
-      <label class="layer-toggle"><input type="checkbox" id="toggle-air">Air-quality readings, TVA area, 2025</label>
-      <div id="air-opts" hidden>
-        <select class="sub-select" id="air-var" aria-label="Air pollutant">
-          <option value="pm">PM2.5, annual mean (µg/m³)</option>
-          <option value="o3">Ozone, 4th-highest 8-hour (ppb)</option>
-        </select>
-        <div class="sub-legend">
-          <span><span class="key key-aq" style="display:inline-block;vertical-align:-2px;margin-right:5px"></span>Meets standard</span>
-          <span><span class="key key-aq near" style="display:inline-block;vertical-align:-2px;margin-right:5px"></span>Within 10%</span>
-          <span><span class="key key-aq over" style="display:inline-block;vertical-align:-2px;margin-right:5px"></span>▲ Above standard</span>
+
+    <details class="more" id="g-score" open>
+      <summary>Injustice score<span class="on-count" hidden></span></summary>
+      <p class="sub-note">One number per census tract and year: health, income, noise, air, nearby infrastructure and legal activity, ranked against every tract in every year from 2019 to 2026. Race, authority and testimonies are not part of it. A screening index from public data, not a finding.</p>
+      <div id="score-weights-wrap">
+        <p class="layer-head">Adjust the weights</p>
+        <div id="score-weights"></div>
+        <p class="src">Missing data is never filled in; it scores as the value above. Method: <a href="docs/injustice-score-method.md" target="_blank" rel="noopener">how the score is built</a></p>
+      </div>
+    </details>
+
+    <details class="more" id="g-health" open>
+      <summary>Health<span class="on-count" hidden></span></summary>
+      <div class="layer-group">
+        <div class="views" data-views="asthma,cancer,copd,asthma_er,absenteeism"></div>
+        <p class="src">CDC PLACES (asthma, cancer, COPD; to 2023) · CDC Tracking Network (asthma ER visits, Shelby, 2015–19) · school chronic absenteeism (TN, MS; weak stand-in)</p>
+        <label class="layer-toggle"><input type="checkbox" id="toggle-schools"><span class="lt-text">Schools <span class="hint">Chronic absenteeism by year</span></span></label>
+        <p class="src">TN Dept. of Education; Mississippi Report Card · locations: NCES</p>
+      </div>
+    </details>
+
+    <details class="more" id="g-air" open>
+      <summary>Air pollution<span class="on-count" hidden></span></summary>
+      <div class="layer-group">
+        <div class="views" data-views="pm25_model,o3_model,monitor_gap"></div>
+        <p class="src">Modeled estimates end in 2022 (CDC/EPA); later years are shown as no data. Monitor gap: distance to the nearest working regulatory monitor.</p>
+        <label class="layer-toggle"><input type="checkbox" id="toggle-monitors"><span class="lt-text">Regulatory monitors near Memphis <span class="hint">For the neighborhood data year</span></span></label>
+        <div class="sub-legend" id="monitors-legend" hidden>
+          <span><i class="mon mon--ok"></i>Complete year</span><span><i class="mon mon--part"></i>Incomplete year</span><span><i class="mon mon--none"></i>Not measuring that year</span>
         </div>
-  </details>
+        <p class="src">EPA AirData annual summaries · Official</p>
+      </div>
+      <div class="layer-group">
+        <label class="layer-toggle"><input type="checkbox" id="toggle-air"><span class="lt-text">Air-quality readings, TVA area <span class="hint">2025</span></span></label>
+        <div id="air-opts" hidden>
+          <select class="sub-select" id="air-var" aria-label="Air pollutant">
+            <option value="pm">PM2.5, annual mean (µg/m³)</option>
+            <option value="o3">Ozone, 4th-highest 8-hour (ppb)</option>
+          </select>
+          <div class="sub-legend">
+            <span><span class="key key-aq" style="display:inline-block;vertical-align:-2px;margin-right:5px"></span>Meets standard</span>
+            <span><span class="key key-aq near" style="display:inline-block;vertical-align:-2px;margin-right:5px"></span>Within 10%</span>
+            <span><span class="key key-aq over" style="display:inline-block;vertical-align:-2px;margin-right:5px"></span>▲ Above standard</span>
+          </div>
+        </div>
+        <p class="src">EPA AirData 2025 · Official · one year, indicative only</p>
+      </div>
+    </details>
 
-  <details class="more" id="g-infra" open>
-    <summary>Infrastructure</summary>
-    <div class="layer-group" id="xai-group">
-      <label class="layer-toggle"><input type="checkbox" id="toggle-xai" checked>Turbines and xAI sites <span class="hint">Colossus 1 &amp; 2, Southaven</span></label>
-      <ul class="subgrid">
-        <li><span class="key key-dc"></span>Data center</li>
-        <li><svg class="shape" viewBox="0 0 20 20" width="14" height="14" aria-hidden="true"><path d="M10 1.5 L19 18 H1 Z" style="fill:var(--g-gas);stroke:var(--colossus);stroke-width:2.5px"/></svg>Off-grid gas turbines</li>
-        <li class="wide"><span class="key key-xlink"></span>Turbines → data center they power (schematic, not the cable route)</li>
-      </ul>
-      <p class="src">NAACP complaint, MDEQ, Mississippi Free Press · see each site</p>
-    </div>
-    <div class="layer-group" id="plants-group">
-      <label class="layer-toggle"><input type="checkbox" id="toggle-plants" checked>Generation sites <span class="hint">power plants, sized by capacity</span></label>
-      <ul class="subgrid types" id="plant-types"></ul>
-      <p class="src">EIA-860 generators, 2025 · Official · shown for the grid year at the bottom</p>
-    </div>
-    <div class="layer-group" id="lines-group">
-      <label class="layer-toggle"><input type="checkbox" id="toggle-lines" checked>Powerlines (transmission, 69 kV and up)</label>
-      <ul class="subgrid">
-        <li><span class="key key-v key-v500"></span>500 kV</li>
-        <li><span class="key key-v key-v230"></span>230 kV</li>
-        <li><span class="key key-v key-v161"></span>100–161 kV</li>
-        <li><span class="key key-v key-vlow"></span>69 kV and below</li>
-        <li><span class="key key-v key-vna"></span>Not listed</li>
-        <li class="wide"><span class="key key-v key-est"></span>Faded on the timeline: year estimated</li>
-      </ul>
-      <p class="src">HIFLD · Official · build years: OpenStreetMap, others estimated. Local distribution lines are not public.</p>
-    </div>
-    <div class="layer-group">
-      <label class="layer-toggle"><input type="checkbox" id="toggle-substations">Substations <span class="hint">Memphis area, today</span></label>
-      <p class="src">OpenStreetMap contributors (ODbL) · present-day; most have no build date, so not scored</p>
-    </div>
-    <div class="layer-group">
-      <label class="layer-toggle"><input type="checkbox" id="toggle-tva" checked>TVA power service area</label>
-      <ul class="subgrid"><li class="wide"><span class="key key-tva"></span>Service-area boundary; outside it is faded</li></ul>
-      <p class="src">TVA_Power_Service_Area · Official · Dec 2016</p>
-    </div>
-  </details>
+    <details class="more" id="g-noise">
+      <summary>Noise<span class="on-count" hidden></span></summary>
+      <div class="layer-group">
+        <div class="views" data-views="noise"></div>
+        <p class="src">BTS transportation noise, 2020 (road, rail, air). Cannot show turbine or industrial noise.</p>
+      </div>
+      <div class="layer-group">
+        <label class="layer-toggle"><input type="checkbox" id="toggle-noise"><span class="lt-text">Noise map tiles <span class="hint">Road, rail, air · BTS 2022</span></span></label>
+        <div class="sub-legend" id="noise-legend" hidden>
+          <span><i style="background:#ffc107"></i>45</span><span><i style="background:#ff8000"></i>50</span><span><i style="background:#ff0000"></i>55</span>
+          <span><i style="background:#ff3399"></i>60</span><span><i style="background:#a300cc"></i>70</span><span><i style="background:#5200cc"></i>80</span>
+          <span><i style="background:#0000ff"></i>90+ dBA, 24-hour average</span>
+          <span class="wide">Modeled traffic noise. It does not include turbines or other industrial noise, and BTS says it is for trends, not for judging a location.</span>
+        </div>
+      </div>
+    </details>
 
-  <details class="more" id="xai-record" open>
-    <summary>Permits &amp; legal decisions, 2024–2027</summary>
-    <p class="sub-note">Counts, permits, filings and rulings around Colossus 1, Colossus 2 and the Southaven turbines, each tagged with what kind of claim it is. Allegations are not findings.</p>
-    <div class="xr-time">
-      <span class="xr-date" id="xr-date"></span>
-      <input type="range" id="xr-range" min="0" max="0" step="1" value="0" aria-label="Date in the xAI record">
-    </div>
-    <p class="xr-readout" id="xr-readout"></p>
-    <div class="layer-group">
-      <label class="layer-toggle"><input type="checkbox" id="toggle-decisions" checked>Decisions <span class="hint">votes, permits, filings, rulings</span></label>
-      <ul class="subgrid xr-juris" id="xr-juris"></ul>
-      <ol class="xr-list" id="xr-list"></ol>
-      <ul class="subgrid lg-key">
-        <li><span class="lgi lgi--inj">!</span>Injunction motion or ruling</li>
-        <li><span class="lgi lgi--case">§</span>Lawsuit, filing, ruling, notice, appeal</li>
-        <li><span class="lgi lgi--permit">P</span>Permit, application, hearing, order, vote</li>
-      </ul>
-      <label class="layer-toggle"><input type="checkbox" id="toggle-counts" checked>Turbine counts <span class="hint">at the date above</span></label>
-      <p class="src">MDEQ Agreed Order, NAACP complaint, SELC · each count tagged</p>
-      <label class="layer-toggle"><input type="checkbox" id="toggle-c3">Colossus 3 <span class="hint">planned, per the complaint</span></label>
-      <p class="src">NAACP complaint · Alleged · geocoded address</p>
-    </div>
-  </details>
+    <details class="more" id="g-income">
+      <summary>Income<span class="on-count" hidden></span></summary>
+      <div class="layer-group">
+        <div class="views" data-views="income,poverty"></div>
+        <p class="src">Census ACS 5-year · income in 2024 dollars · margins of error in tract details</p>
+      </div>
+      <div class="layer-group">
+        <label class="field">Counties across the TVA area, ACS 2020–2024
+          <select id="county-var">
+            <option value="">Off</option>
+            <option value="dens">Population density</option>
+            <option value="inc">Median household income</option>
+            <option value="pov">Poverty rate</option>
+          </select>
+        </label>
+        <div class="seq-legend" id="county-legend" hidden></div>
+        <p class="src">Census ACS 2020–2024, 5-year · Official · quintiles</p>
+      </div>
+      <div class="layer-group" id="bg-group">
+        <label class="field">Block groups near the xAI sites, ACS 2020–2024
+          <select id="bg-var">
+            <option value="">Off</option>
+            <option value="black_pct">Black residents (non-Hispanic), %</option>
+            <option value="inc">Median household income</option>
+            <option value="pov_pct">Poverty rate</option>
+          </select>
+        </label>
+        <div class="seq-legend" id="bg-legend" hidden></div>
+        <p class="sub-note" id="bg-note" hidden>Estimates with margins of error (click a block group). Homes near the Southaven plant were reported changing hands in Oct 2026, so these 2020–2024 figures may not describe who lives there now.</p>
+      </div>
+    </details>
 
-  <section class="records" aria-label="Testimonies">
-    <div class="rec-head"><h2>Testimonies</h2><button class="rec-add" type="button" id="rec-add">＋ Add a note</button></div>
-    <label class="layer-toggle rec-show"><input type="checkbox" id="toggle-notes" checked>Show my notes on the map <span class="hint">never included in PDF exports</span></label>
-    <p class="rec-note" id="rec-note">Private notes: a testimony, observation or correction pinned to a place. They are saved only in this browser, and nobody else can see them. Export them, with how you know each one, to share.</p>
-    <ol class="rec-list" id="rec-list"></ol>
-    <div class="rec-exports" id="rec-export" hidden>
-      <button class="btn" type="button" data-export="geojson">Export notes (GeoJSON)</button>
-      <button class="btn" type="button" data-export="csv">Export notes (CSV)</button>
+    <details class="more" id="g-race">
+      <summary>Race<span class="on-count" hidden></span></summary>
+      <div class="layer-group">
+        <div class="views" data-views="black_pct"></div>
+        <p class="src">Census ACS 5-year · shown for context, never scored</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ LEGAL ============ -->
+  <section class="tp" role="tabpanel" id="tp-legal" aria-labelledby="tab-legal" tabindex="-1" hidden>
+    <h2 class="tp-title">Permits &amp; legal decisions, 2024–2027</h2>
+    <p class="tp-intro">Counts, permits, filings and rulings around Colossus 1, Colossus 2 and the Southaven turbines, each tagged with what kind of claim it is. Allegations are not findings.</p>
+    <div class="card" id="xai-record">
+      <div class="xr-time">
+        <label class="ctl-label" for="xr-range">Date in the legal record</label>
+        <span class="xr-date" id="xr-date"></span>
+        <input type="range" id="xr-range" min="0" max="0" step="1" value="0" aria-label="Date in the legal record">
+      </div>
+      <p class="xr-readout" id="xr-readout"></p>
+      <div class="layer-group">
+        <label class="layer-toggle"><input type="checkbox" id="toggle-counts" checked><span class="lt-text">Turbine counts <span class="hint">At the date above</span></span></label>
+        <p class="src">MDEQ Agreed Order, NAACP complaint, SELC · each count tagged</p>
+        <label class="layer-toggle"><input type="checkbox" id="toggle-c3"><span class="lt-text">Colossus 3 <span class="hint">Planned, per the complaint</span></span></label>
+        <p class="src">NAACP complaint · Alleged · geocoded address</p>
+        <label class="layer-toggle"><input type="checkbox" id="toggle-decisions" checked><span class="lt-text">Decisions <span class="hint">Votes, permits, filings, rulings</span></span></label>
+        <ul class="subgrid xr-juris" id="xr-juris"></ul>
+        <ul class="subgrid lg-key">
+          <li><span class="lgi lgi--inj">!</span>Injunction motion or ruling</li>
+          <li><span class="lgi lgi--case">§</span>Lawsuit, filing, ruling, notice, appeal</li>
+          <li><span class="lgi lgi--permit">P</span>Permit, application, hearing, order, vote</li>
+        </ul>
+        <ol class="xr-list" id="xr-list"></ol>
+      </div>
     </div>
   </section>
 
-  <details class="more" id="g-env">
-    <summary>Other context</summary>
-    <div class="layer-group">
-      <label class="layer-toggle"><input type="checkbox" id="toggle-ash">Coal ash sites <span class="hint">Kingston, Allen</span></label>
-      <p class="src">EPA (Kingston), Mississippi Free Press (Allen)</p>
-      <label class="layer-toggle"><input type="checkbox" id="toggle-wells">Memphis aquifer wells <span class="hint">USGS</span></label>
-      <p class="src">USGS National Water Information System · Official</p>
-      <label class="layer-toggle"><input type="checkbox" id="toggle-sat">Satellite patches around generation</label>
-      <p class="src">Esri World Imagery · around power plants and xAI sites</p>
-    </div>
-  </details>
+  <!-- ============ NOTES ============ -->
+  <section class="tp" role="tabpanel" id="tp-notes" aria-labelledby="tab-notes" tabindex="-1" hidden>
+    <section class="records" aria-label="Testimonies">
+      <div class="rec-head"><h2>Testimonies and notes</h2></div>
+      <p class="rec-note" id="rec-note">Private notes: a testimony, observation or correction pinned to a place. They are saved only in this browser, and nobody else can see them. Export them, with how you know each one, to share.</p>
+      <button class="rec-add" type="button" id="rec-add">＋ Add a note</button>
+      <label class="layer-toggle rec-show"><input type="checkbox" id="toggle-notes" checked><span class="lt-text">Show my notes on the map <span class="hint">Never included in PDF exports</span></span></label>
+      <ol class="rec-list" id="rec-list"></ol>
+      <div class="rec-exports" id="rec-export" hidden>
+        <button class="btn" type="button" data-export="geojson">Export notes (GeoJSON)</button>
+        <button class="btn" type="button" data-export="csv">Export notes (CSV)</button>
+      </div>
+    </section>
+  </section>
 
-  <details class="more" id="about-data">
-    <summary>About this data</summary>
-    <p class="sub-note">Every source behind the map, with its tier: official (agency or court), community, self-reported, secondary (news, reference) or derived (estimated or modeled). Items marked "excerpt" were checked only from a search excerpt; open the source before quoting.</p>
-    <ol class="about-list" id="about-list"></ol>
-    <p class="sub-note"><a href="data/decisions.json" download>Decisions (JSON)</a> · <a href="data/turbines.json" download>Turbine counts (JSON)</a> · <a href="data/sources.json" download>Sources (JSON)</a>. Each row carries its status, source link and a "verified on" date.</p>
-  </details>
+  <!-- ============ SOURCES ============ -->
+  <section class="tp" role="tabpanel" id="tp-sources" aria-labelledby="tab-sources" tabindex="-1" hidden>
+    <h2 class="tp-title">About this data</h2>
+    <div class="card" id="about-data">
+      <p class="sub-note">Every source behind the map, with its tier: official (agency or court), community, self-reported, secondary (news, reference) or derived (estimated or modeled). Items marked "excerpt" were checked only from a search excerpt; open the source before quoting.</p>
+      <ol class="about-list" id="about-list"></ol>
+      <p class="sub-note"><a href="data/decisions.json" download>Decisions (JSON)</a> · <a href="data/turbines.json" download>Turbine counts (JSON)</a> · <a href="data/sources.json" download>Sources (JSON)</a>. Each row carries its status, source link and a "verified on" date.</p>
+    </div>
+  </section>
+
+  </div>
 </aside>
 
 <figure class="sat-card" id="sat-card" aria-hidden="true"><img alt=""><figcaption></figcaption></figure>
 
 <div class="rec-banner" id="rec-banner" hidden>Click the map to place your record · <b>Esc</b> to cancel</div>
 
-<section class="timeline" id="timeline" aria-label="Timeline">
+<section class="timeline" id="timeline" aria-label="Power grid year">
   <div class="tl-head">
     <button class="tl-play" type="button" id="tl-play" aria-label="Play the timeline"></button>
-    <span class="tl-year" id="tl-year">2025</span>
+    <span class="tl-yearbox"><span class="tl-kicker">Power grid year</span><span class="tl-year" id="tl-year">2025</span></span>
     <span class="tl-stats" id="tl-stats">Loading…</span>
     <button class="btn tl-exit" type="button" id="tl-exit" hidden>Back to today</button>
   </div>
   <div class="tl-track" id="tl-track">
     <svg class="tl-chart" id="tl-chart" preserveAspectRatio="none" aria-hidden="true"></svg>
     <span class="tl-max" id="tl-max"></span>
-    <input type="range" id="tl-range" min="1910" max="2025" step="1" value="2025" aria-label="Year">
+    <input type="range" id="tl-range" min="1910" max="2025" step="1" value="2025" aria-label="Power grid year">
     <div class="tl-axis" id="tl-axis"></div>
   </div>
   <details class="tl-about" id="tl-about">
@@ -1122,8 +433,8 @@
 
   // Keep fitted views and popups clear of the floating panel.
   function panelPadding() {
-    const r = panel.getBoundingClientRect();
-    return phone.matches ? L.point(16, r.bottom + 12) : L.point(r.right + 24, 24);
+    // The map now sits beside the sidebar (and above the phone sheet), never under it.
+    return L.point(24, 24);
   }
   function fitOpts() {
     const size = map.getSize(), tl = panelPadding(), br = L.point(40, timelineEl.offsetHeight + 40);
@@ -1151,11 +462,11 @@
   map.getPane("labels").style.pointerEvents = "none";
   const esri = (layer, isDark) =>
     `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_${isDark ? "Dark" : "Light"}_Gray_${layer}/MapServer/tile/{z}/{y}/{x}`;
-  const base = L.tileLayer(esri("Base", document.documentElement.dataset.theme !== "light"), {
+  const base = L.tileLayer(esri("Base", false), {
     maxZoom: 16,
     attribution: 'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors'
   }).addTo(map);
-  const labels = L.tileLayer(esri("Reference", document.documentElement.dataset.theme !== "light"), { maxZoom: 16, pane: "labels" }).addTo(map);
+  const labels = L.tileLayer(esri("Reference", false), { maxZoom: 16, pane: "labels" }).addTo(map);
 
   // States and transmission lines share one canvas so clicks reach whichever is on top.
   const canvas = L.canvas({ padding: 0.5, tolerance: 5 });
@@ -1415,6 +726,10 @@
         pl.marker = L.marker([f.geometry.coordinates[1], f.geometry.coordinates[0]], { title: "", alt: f.properties.n })
           .bindTooltip(() => `${esc(pl.p.n)} · ${fmtMW(pl.mw)}`, { direction: "top", className: "plant-tip" })
           .bindPopup(() => plantPopup(pl), { autoPanPaddingTopLeft: panelPadding() });
+        // divIcons get no accessible name from `alt`; name each plant for screen readers
+        const nameIcon = () => pl.marker.getElement()?.setAttribute("aria-label", `${pl.p.n}, power plant`);
+        pl.marker.on("add", nameIcon);
+        pl.nameIcon = nameIcon;
         plants.push(pl);
       });
       document.getElementById("plant-types").innerHTML = TYPE_KEYS.map(t => `
@@ -1457,6 +772,7 @@
       pl.mw = total;
       if (t !== pl.t || size !== pl.size) {
         pl.marker.setIcon(L.divIcon({ className: "plant-icon", html: shapeSvg(t, size, ""), iconSize: [size, size], iconAnchor: [size / 2, size / 2] }));
+        pl.nameIcon();
         pl.marker.getTooltip().options.offset = [0, -size / 2];
         if (pl.t !== t) {
           if (pl.t) plantGroups[pl.t].removeLayer(pl.marker);
@@ -1486,7 +802,7 @@
   const PAUSE_ICON = '<svg viewBox="0 0 12 12"><path d="M2 1 H5 V11 H2 Z M7 1 H10 V11 H7 Z"/></svg>';
   playBtn.innerHTML = PLAY_ICON;
   // The data note stays open on wider screens; on phones it folds to save map space.
-  document.getElementById("tl-about").open = !phone.matches;
+  document.getElementById("tl-about").open = false;   // long method note: opened on request
   // Bottom-up stack: oldest fleet first, so the chart reads as layers added over time.
   const STACK = ["hydro", "coal", "nuclear", "gas", "solar", "other"];
 
@@ -1817,29 +1133,9 @@
     noiseToggle.checked ? noiseLayer.addTo(map) : map.removeLayer(noiseLayer);
   });
 
-  // ---------- Theme: dark (default) or light, remembered per browser ----------
+  // ---------- Outside the TVA area: a pale veil ----------
   let outsideVeil = null;
-  const veilStyle = () => (document.documentElement.dataset.theme === "light"
-    ? { fillColor: "#f4f4f4", fillOpacity: 0.72 } : { fillColor: "#050506", fillOpacity: 0.66 });
-  const themeBtn = document.getElementById("theme-btn");
-  const SUN = '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6L13 13M3 13l1.4-1.4M11.6 4.4L13 3"/></svg>';
-  const MOON = '<svg viewBox="0 0 16 16"><path d="M13 9.5A5.5 5.5 0 0 1 6.5 3a5.5 5.5 0 1 0 6.5 6.5z"/></svg>';
-  function setTheme(t) {
-    document.documentElement.dataset.theme = t;
-    try { localStorage.setItem("theme", t); } catch (e) { /* private mode: theme just isn't remembered */ }
-    const isDark = t !== "light";
-    themeBtn.innerHTML = isDark ? SUN : MOON;
-    themeBtn.setAttribute("aria-label", isDark ? "Switch to light mode" : "Switch to dark mode");
-    base.setUrl(esri("Base", isDark));
-    labels.setUrl(esri("Reference", isDark));
-    readPalette();
-    statesLayer?.eachLayer(l => l.setStyle(stateStyle(l.feature.properties.name, false)));
-    lineItems.forEach(it => it.layer.setStyle(netStyle(it.p, false)));
-    outsideVeil?.setStyle(veilStyle());
-    if (countyVar) applyCounties();
-  }
-  themeBtn.innerHTML = document.documentElement.dataset.theme === "light" ? MOON : SUN;
-  themeBtn.addEventListener("click", () => setTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light"));
+  const veilStyle = () => ({ fillColor: "#f4f4f4", fillOpacity: 0.72 });
 
   // TVA power service area outline (from TVA's TVA_Power_Service_Area layer), drawn above the state shading.
   map.createPane("tva");
@@ -2425,6 +1721,7 @@
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="score.js?v=2026-11-11b"></script>
-<script src="map-tool.js?v=2026-11-11k"></script>
+<script src="map-tool.js?v=2026-11-12a"></script>
+<script src="panel-ui.js?v=2026-11-12a"></script>
 </body>
 </html>

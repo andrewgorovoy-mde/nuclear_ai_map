@@ -2,7 +2,7 @@
 //  STORY ENGINE — scroll → chapter/step/progress → year → layers + camera + HUD.
 //  You shouldn't need to edit this to change content (see chapters.js / layers.js).
 // =====================================================================================
-import { CHAPTERS, TAGS, META, EXPLAINER, TESTIMONIES, PLACES } from "./chapters.js?v=2026-11-11b";
+import { CHAPTERS, TAGS, META, EXPLAINER, TESTIMONIES, PLACES } from "./chapters.js?v=2026-11-17a";
 import { LAYERS } from "./layers.js?v=2026-11-11b";
 
 const L = window.L;
@@ -256,10 +256,11 @@ function updateInterlude(ch, year, p) {
 // ---------- testimonies: quote markers by the sites; hover (or tap) to read ----------
 const tGroup = L.layerGroup().addTo(map);
 const tCard = document.getElementById("testimony");
-function showTestimonies(list, e) {
+let tOpener = null;     // the marker that opened the card, so focus can go back to it
+function showTestimonies(list, e, { focus = false } = {}) {
   clearTimeout(tHide);
   // Quote first, then a quiet attribution line; sources are links (the card stays open while hovered).
-  tCard.innerHTML = list.map(t => `
+  tCard.innerHTML = `<button class="t-close" type="button" aria-label="Close testimony">×</button>` + list.map(t => `
     <article>
       <blockquote>“${t.text}”</blockquote>
       <p class="t-who">${t.speaker}${t.year ? `, ${t.year}` : ""}</p>
@@ -267,14 +268,31 @@ function showTestimonies(list, e) {
     </article>`).join("");
   tCard.hidden = false;
   const stage = document.querySelector(".stage").getBoundingClientRect();
-  const x = e.originalEvent.clientX - stage.left, y = e.originalEvent.clientY - stage.top;
-  tCard.style.left = `${Math.min(stage.width - tCard.offsetWidth - 16, x + 18)}px`;
+  // Mouse: next to the pointer. Keyboard or touch without coordinates: next to the marker.
+  let x, y;
+  if (Number.isFinite(e.originalEvent?.clientX) && e.originalEvent.clientX > 0) {
+    x = e.originalEvent.clientX - stage.left; y = e.originalEvent.clientY - stage.top;
+  } else {
+    const pt = map.latLngToContainerPoint(e.target.getLatLng());
+    x = pt.x; y = pt.y;
+  }
+  tCard.style.left = `${Math.max(16, Math.min(stage.width - tCard.offsetWidth - 16, x + 18))}px`;
   tCard.style.top = `${Math.max(16, Math.min(stage.height - tCard.offsetHeight - 16, y - tCard.offsetHeight / 2))}px`;
+  if (focus) tCard.querySelector(".t-close").focus();
+}
+function closeTestimonies() {
+  clearTimeout(tHide);
+  if (tCard.hidden) return;
+  const back = tCard.contains(document.activeElement) ? tOpener : null;
+  tCard.hidden = true;
+  back?.focus();
 }
 let tHide = 0;
-const hideSoon = () => { clearTimeout(tHide); tHide = setTimeout(() => { tCard.hidden = true; }, 250); };
+const hideSoon = () => { clearTimeout(tHide); tHide = setTimeout(() => { if (!tCard.contains(document.activeElement)) tCard.hidden = true; }, 250); };
 tCard.addEventListener("mouseenter", () => clearTimeout(tHide));
 tCard.addEventListener("mouseleave", hideSoon);
+tCard.addEventListener("click", e => { if (e.target.closest(".t-close")) closeTestimonies(); });
+tCard.addEventListener("keydown", e => { if (e.key === "Escape") closeTestimonies(); });
 function syncTestimonies(ch) {
   tGroup.clearLayers();
   tCard.hidden = true;
@@ -283,9 +301,20 @@ function syncTestimonies(ch) {
   Object.entries(byPlace).forEach(([place, list]) => {
     const m = L.marker(PLACES[place], {
       icon: L.divIcon({ className: "t-mark", html: `<span>❝</span>${list.length > 1 ? `<em>${list.length}</em>` : ""}`, iconSize: [22, 22], iconAnchor: [-6, 28] }),
-      keyboard: true, title: "Testimony", zIndexOffset: 900
+      keyboard: true, title: list.length > 1 ? `${list.length} testimonies` : "Testimony", alt: "Testimony", zIndexOffset: 900
     });
-    m.on("mouseover click", e => showTestimonies(list, e));
+    m.on("add", () => m.getElement()?.setAttribute("aria-label", list.length > 1 ? `Read ${list.length} testimonies` : "Read testimony"));
+    m.on("mouseover", e => showTestimonies(list, e));
+    // Click, tap or Enter: open and move focus into the card, so it can be read and closed by keyboard.
+    m.on("click", e => { tOpener = m.getElement(); showTestimonies(list, e, { focus: true }); });
+    // Leaflet only maps Enter to popups; these markers open a card, so handle Enter and Space here.
+    m.on("keydown", e => {
+      const k = e.originalEvent.key;
+      if (k !== "Enter" && k !== " ") return;
+      e.originalEvent.preventDefault();
+      tOpener = m.getElement();
+      showTestimonies(list, e, { focus: true });
+    });
     m.on("mouseout", hideSoon);
     tGroup.addLayer(m);
   });
